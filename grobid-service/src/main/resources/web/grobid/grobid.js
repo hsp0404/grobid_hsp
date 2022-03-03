@@ -786,7 +786,7 @@ var grobid = (function($) {
                                     caption.innerText = figures[i].caption.replaceAll("\n", "");
                                     preview.onclick = (e) => {
                                         e.stopPropagation()
-                                        let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + "px, height=" + e.target.naturalHeight + 30 + "px");
+                                        let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + ", height=" + (Number(e.target.naturalHeight) + 40));
                                         figureWin.document.write("<html><body style='margin:0'>")
                                         figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.src + "' border=0></a><br/>");
                                         figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
@@ -853,7 +853,7 @@ var grobid = (function($) {
                                 preview.className = 'preview-img';
                                 preview.onclick = (e) => {
                                     e.stopPropagation()
-                                    let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + "px, height=" + e.target.naturalHeight + 30 + "px");
+                                    let figureWin = window.open("", "image_popup", "width=" + e.target.width + ", height=" + (Number(e.target.height) + 120));
                                     figureWin.document.write("<html><body style='margin:0'>")
                                     figureWin.document.write("<small style='font-size: 25px'>header : "+ header.innerText + "</small><br/>")
                                     figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.toDataURL('image/png') + "' border=0></a><br/>");
