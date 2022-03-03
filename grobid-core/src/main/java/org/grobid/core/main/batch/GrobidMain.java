@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.grobid.core.engines.ProcessEngine;
 import org.grobid.core.main.GrobidHomeFinder;
 import org.grobid.core.main.LibraryLoader;
@@ -22,6 +23,7 @@ public class GrobidMain {
 	 * Arguments of the batch.
 	 */
 	private static GrobidMainArgs gbdArgs;
+    private static boolean isService = false;
 
 	/**
 	 * Build the path to grobid.properties from the path to grobid-home.
@@ -163,6 +165,9 @@ public class GrobidMain {
 					gbdArgs.setRecursive(true);
 					continue;
 				}
+                if (currArg.equals("-service")){
+                    isService = true;
+                }
 			}
 		}
 		return result;
@@ -187,8 +192,21 @@ public class GrobidMain {
             }
 			ProcessEngine processEngine = new ProcessEngine();
 			Utilities.launchMethod(processEngine, new Object[] { gbdArgs }, gbdArgs.getProcessMethodName());
-			processEngine.close();
+            if (!isService) {
+			    processEngine.close();
+            }
 		}
+
+//        if (isService) {
+//            String input = gbdArgs.getPath2Input();
+//            File file = new File(input);
+//            File[] files = file.listFiles();
+//            for (File file1 : files) {
+//                if(file1.isFile()){
+//                    FileUtils.moveFile(file1, new File(file1.getPath().replace("trainTmp/pdf/", "trainTmp/pdf/done/")));
+//                }
+//            }
+//        }
 
 	}
 

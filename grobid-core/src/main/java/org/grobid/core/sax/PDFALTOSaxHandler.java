@@ -455,7 +455,7 @@ public class PDFALTOSaxHandler extends DefaultHandler {
 			}
 			image.setBoundingBox(BoundingBox.fromPointAndDimensions(currentPage, x, y, width, height));
 			image.setPage(currentPage);
-			images.add(image);
+            images.add(image);
 		} else if (qName.equals("TextLine")) {
 			int length = atts.getLength();
 

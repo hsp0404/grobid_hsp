@@ -812,6 +812,8 @@ public class HeaderParser extends AbstractParser {
                 else*/
                 if (biblio.getTitle() == null) {
                     biblio.setTitle(clusterContent);
+                }else{
+                    biblio.setTitle(biblio.getTitle() + "//lang//" + clusterContent);
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_AUTHOR)) {
                 //if (biblio.getAuthors() != null && isDifferentandNotIncludedContent(biblio.getAuthors(), clusterContent)) {
@@ -915,7 +917,7 @@ public class HeaderParser extends AbstractParser {
                 if (biblio.getAbstract() != null) {
                     // this will need to be reviewed with more training data, for the moment
                     // avoid concatenation for abstracts as it brings more noise than correct pieces
-                    //biblio.setAbstract(biblio.getAbstract() + " " + clusterContent);
+                    biblio.setAbstract(biblio.getAbstract() + " //lang// " + clusterContent);
                 } else {
                     biblio.setAbstract(clusterContent);
                     List<LayoutToken> tokens = cluster.concatTokens();
@@ -964,10 +966,14 @@ public class HeaderParser extends AbstractParser {
                     biblio.checkIdentifier();
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_KEYWORD)) {
+                if (clusterContent.contains("(") && clusterContent.contains(")")) {
+                    clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", "");
+                }
                 if (biblio.getKeyword() != null) {
-                    biblio.setKeyword(biblio.getKeyword() + " \n " + clusterContent);
-                } else
+                    biblio.setKeyword(biblio.getKeyword() + ", " + clusterContent);
+                } else {
                     biblio.setKeyword(clusterContent);
+                }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_PHONE)) {
                 if (biblio.getPhone() != null) {
                     biblio.setPhone(biblio.getPhone() + clusterNonDehypenizedContent);
@@ -993,7 +999,7 @@ public class HeaderParser extends AbstractParser {
                     biblio.setSubmission(biblio.getSubmission() + " " + clusterContent);
                 } else
                     biblio.setSubmission(clusterContent);
-            } /*else if (clusterLabel.equals(TaggingLabels.HEADER_ENTITLE)) {
+            } else if (clusterLabel.equals(TaggingLabels.HEADER_ENTITLE)) {
                 if (biblio.getEnglishTitle() != null) {
 //                    if (cluster.getFeatureBlock().contains("LINESTART")) {
 //                        biblio.setEnglishTitle(biblio.getEnglishTitle() + " " + clusterContent);
@@ -1004,9 +1010,9 @@ public class HeaderParser extends AbstractParser {
             } else if (clusterLabel.equals(TaggingLabels.HEADER_VERSION)) {
                 if (biblio.getVersion() != null && isDifferentandNotIncludedContent(biblio.getVersion(), clusterNonDehypenizedContent)) {
                     biblio.setVersion(biblio.getVersion() + clusterNonDehypenizedContent);
-                } else 
+                } else
                     biblio.setVersion(clusterNonDehypenizedContent);
-            }*/ else if (clusterLabel.equals(TaggingLabels.HEADER_DOCTYPE)) {
+            } else if (clusterLabel.equals(TaggingLabels.HEADER_DOCTYPE)) {
                 if (biblio.getDocumentType() != null && isDifferentContent(biblio.getDocumentType(), clusterContent)) {
                     biblio.setDocumentType(biblio.getDocumentType() + " \n " + clusterContent);
                 } else
@@ -1253,9 +1259,9 @@ public class HeaderParser extends AbstractParser {
             if (!output) {
                 output = writeField(buffer, s1, lastTag0, s2, "<submission>", "<note type=\"submission\">", addSpace);
             }
-            /*if (!output) {
-                output = writeField(buffer, s1, lastTag0, s2, "<entitle>", "<note type=\"title\">", addSpace);
-            }*/
+            if (!output) {
+                output = writeField(buffer, s1, lastTag0, s2, "<entitle>", "<note type=\"english-title\">", addSpace);
+            }
             if (!output) {
                 output = writeField(buffer, s1, lastTag0, s2, "<reference>", "<reference>", addSpace);
             }

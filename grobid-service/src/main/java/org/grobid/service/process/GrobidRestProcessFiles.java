@@ -1,5 +1,8 @@
 package org.grobid.service.process;
 
+import com.github.pemistahl.lingua.api.Language;
+import com.github.pemistahl.lingua.api.LanguageDetector;
+import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -7,10 +10,16 @@ import org.grobid.core.data.BibDataSet;
 import org.grobid.core.data.BiblioItem;
 import org.grobid.core.data.PatentItem;
 import org.grobid.core.document.Document;
+import org.grobid.core.document.DocumentPiece;
 import org.grobid.core.document.DocumentSource;
 import org.grobid.core.engines.Engine;
 import org.grobid.core.engines.config.GrobidAnalysisConfig;
 import org.grobid.core.factory.GrobidPoolingFactory;
+import org.grobid.core.layout.*;
+import org.grobid.core.main.batch.GrobidMain;
+import org.grobid.core.meta.BiblVO;
+import org.grobid.core.meta.MetaVO;
+import org.grobid.core.meta.PositionVO;
 import org.grobid.core.utilities.GrobidProperties;
 import org.grobid.core.utilities.IOUtilities;
 import org.grobid.core.utilities.KeyGen;
@@ -29,10 +38,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import java.io.*;
+import java.math.BigDecimal;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.security.DigestInputStream;
@@ -117,6 +127,216 @@ public class GrobidRestProcessFiles {
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML + "; charset=UTF-8")
                     .build();
             }
+        } catch (NoSuchElementException nseExp) {
+            LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
+            response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (Exception exp) {
+            LOGGER.error("An unexpected exception occurs. ", exp);
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+        } finally {
+            if (originFile != null)
+                IOUtilities.removeTempFile(originFile);
+
+            if (engine != null) {
+                GrobidPoolingFactory.returnEngine(engine);
+            }
+        }
+
+        LOGGER.debug(methodLogOut());
+        return response;
+    }
+
+    public int trainPdf(){
+        final String trainTmp = "/trainTmp";
+        String homePath = GrobidProperties.getGrobidHome().getPath();
+        String[] args = {"-gH", homePath, "-dIn", homePath + trainTmp + "/pdf", "-dOut", homePath + trainTmp + "/trainData", "-r", "-exe", "createTraining", "-service"};
+        try {
+            GrobidMain.main(args);
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("train error", e);
+            return 0;
+        }
+    }
+
+    public Response getMetaData(Map<String, InputStream> paramMap) throws IOException {
+        LOGGER.debug(methodLogIn());
+        String headerRetVal = null;
+        Document doc;
+        Response response = null;
+        File originFile = null;
+        Engine engine = null;
+        List<BibDataSet> bibDataSetList = null;
+        List<MetaVO> metaVOS = new ArrayList<>();
+        int lastNum = 0;
+        try {
+
+            engine = Engine.getEngine(true);
+            // conservative check, if no engine is free in the pool a NoSuchElementException is normally thrown
+            if (engine == null) {
+                throw new GrobidServiceException(
+                    "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
+            }
+
+            for (Map.Entry<String, InputStream> map : paramMap.entrySet()) {
+                String fileName = map.getKey();
+                InputStream inputStream = map.getValue();
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+                originFile = IOUtilities.writeInputFile(dis);
+
+
+                final String trainTmp = "/trainTmp/pdf";
+
+                Boolean isDuplicate = false;
+
+                File dir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp);
+                File doneDir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp+"/done");
+                File[] files = dir.listFiles();
+                File[] doneFiles = doneDir.listFiles();
+                if(files != null && files.length > 0) {
+                    for (File file : files) {
+                        if (fileName.equals(file.getName())) {
+                            isDuplicate = true;
+                        }
+                    }
+                }
+                if(doneFiles != null && doneFiles.length >0){
+                    for (File file : doneFiles) {
+                        if (fileName.equals(file.getName())) {
+                            isDuplicate = true;
+                        }
+                    }
+                }
+                if(!isDuplicate){
+                    try {
+                        FileInputStream copyStream = new FileInputStream(originFile);
+                        FileOutputStream destStream = new FileOutputStream(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName);
+
+                        FileChannel fcin = copyStream.getChannel();
+                        FileChannel fcout = destStream.getChannel();
+
+                        long size=0;
+                        size = fcin.size();
+                        fcin.transferTo(0, size, fcout);
+
+                        fcout.close();
+                        fcin.close();
+                        copyStream.close();
+                        destStream.close();
+
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+//                    Files.copy(originFile.toPath(), Paths.get(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName));
+                }
+
+
+                byte[] digest = md.digest();
+
+                if (originFile == null) {
+                    LOGGER.error("The input file cannot be written.");
+                    throw new GrobidServiceException(
+                        "The input file cannot be written. ", Status.INTERNAL_SERVER_ERROR);
+                }
+
+                String md5Str = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                String assetPath = GrobidProperties.getTempPath().getPath() + File.separator + KeyGen.getKey();
+
+
+                GrobidAnalysisConfig config =
+                    GrobidAnalysisConfig.builder()
+                        .pdfAssetPath(new File(assetPath))
+                        .build();
+
+                BiblioItem result = new BiblioItem();
+
+                doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+
+                result = doc.getResHeader();
+                bibDataSetList = doc.getBibDataSets();
+
+                LanguageDetector detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
+
+
+
+                MetaVO metaVO = new MetaVO();
+                if(result.getTitle() != null){
+                    metaVO.setTitle(result.getTitle());
+                }
+                if(result.getEnglishTitle() != null){
+                    metaVO.setTitle(result.getEnglishTitle());
+                }
+                if(result.getAbstract() != null){
+                    metaVO.setAbstract(result.getAbstract());
+                }
+                if(result.getOriginalAuthors() != null){
+                    metaVO.setAuthor(result.getOriginalAuthors());
+                }
+                if(result.getKeywords() != null){
+                    metaVO.setKeyword(result.getKeywords());
+                }
+                metaVO.setDoi(result.getDOI());
+                if(result.getSubmission() != null){
+                    metaVO.setSubmission(result.getSubmission());
+                }
+                if(result.getReference() != null){
+                    metaVO.setReference(result.getReference().replaceAll("\n", ""));
+                }
+                if (result.getCopyright() != null) {
+                    metaVO.setCopyright(result.getCopyright());
+                }
+                if (doc.getFigures() != null){
+                    metaVO.setFigures(doc.getFigures());
+                }
+                if (doc.getTables() != null) {
+                    metaVO.setTables(doc.getTables());
+                }
+                metaVO.setAssetPath(assetPath);
+
+                metaVO.setEmail(result.getEmail());
+
+
+    //            List<BibDataSet> bibDataSetList = engine.processReferences(originFile, md5Str, 0);
+
+                List<BiblVO> biblVOS = new ArrayList<>();
+
+                int biblId = 1;
+
+                for (BibDataSet bibDataSet : bibDataSetList) {
+                    BiblVO biblVO = new BiblVO();
+                    biblVO.setId(biblId++);
+                    biblVO.setTitle(bibDataSet.getResBib().getTitle() == null ? bibDataSet.getResBib().getBookTitle() : bibDataSet.getResBib().getTitle());
+                    biblVO.setReport(bibDataSet.getResBib().getBookType());
+                    biblVO.setPublisher(bibDataSet.getResBib().getPublisher());
+                    biblVO.setDoi(bibDataSet.getResBib().getDOI());
+                    if(bibDataSet.getResBib().getFullAuthors() != null){
+                        biblVO.setAuthors(bibDataSet.getResBib().getOriginalAuthors());
+                    }
+                    biblVO.setEditor(bibDataSet.getResBib().getEditors());
+                    biblVO.setPubYear(bibDataSet.getResBib().getPublicationDate());
+                    biblVO.setPubPlace(bibDataSet.getResBib().getLocation());
+                    biblVO.setPageRange(bibDataSet.getResBib().getPageRange());
+                    biblVO.setJournalTitle(bibDataSet.getResBib().getJournal());
+                    biblVO.setIssue(bibDataSet.getResBib().getIssue());
+                    biblVO.setVolume(bibDataSet.getResBib().getVolumeBlock());
+                    biblVO.setRawText(bibDataSet.getRawBib().replaceAll("\n",""));
+                    biblVO.setInstitution(bibDataSet.getResBib().getInstitution());
+                    biblVO.setUrl(bibDataSet.getResBib().getWeb());
+
+                    biblVOS.add(biblVO);
+                }
+
+                metaVO.setBiblList(biblVOS);
+                metaVOS.add(metaVO);
+            }
+
+            response = Response.status(Response.Status.OK)
+                .entity(metaVOS)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON + "; charset=UTF-8")
+                .build();
         } catch (NoSuchElementException nseExp) {
             LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
             response = Response.status(Status.SERVICE_UNAVAILABLE).build();
@@ -231,6 +451,343 @@ public class GrobidRestProcessFiles {
 
         LOGGER.debug(methodLogOut());
         return response;
+    }
+
+    public Response processRange(InputStream inputStream) {
+        LOGGER.debug(methodLogIn());
+        Response response = null;
+        String retVal = null;
+        File originFile = null;
+        Engine engine = null;
+        String assetPath = null;
+        try {
+            engine = Engine.getEngine(true);
+            // conservative check, if no engine is free in the pool a NoSuchElementException is normally thrown
+            if (engine == null) {
+                throw new GrobidServiceException(
+                    "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
+            }
+
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+            originFile = IOUtilities.writeInputFile(dis);
+            byte[] digest = md.digest();
+            if (originFile == null) {
+                LOGGER.error("The input file cannot be written.");
+                throw new GrobidServiceException(
+                    "The input file cannot be written.", Status.INTERNAL_SERVER_ERROR);
+            }
+
+            // set the path for the asset files
+            assetPath = GrobidProperties.getTempPath().getPath() + File.separator + KeyGen.getKey();
+
+            String md5Str = DatatypeConverter.printHexBinary(digest).toUpperCase();
+
+            // starts conversion process
+            GrobidAnalysisConfig config =
+                GrobidAnalysisConfig.builder()
+                    .pdfAssetPath(new File(assetPath))
+                    .build();
+
+            Document imageDoc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+
+            Map<String, Collection<DocumentPiece>> lb = imageDoc.getLabeledBlocks().asMap();
+            List<Page> pages = imageDoc.getPages();
+            int pageSize = pages.size();
+            HashMap<Integer, List<PositionVO>> rangeMap = new HashMap<>();
+            for (int i = 0; i < pageSize; i++) {
+                rangeMap.put(i + 1, new ArrayList<PositionVO>());
+            }
+            ArrayList<PositionVO> pageSizeTemp = new ArrayList<>();
+            pageSizeTemp.add(new PositionVO(0, imageDoc.getPages().get(0).getWidth(), 0.0, imageDoc.getPages().get(0).getHeight(), 0.0));
+            rangeMap.put(0, pageSizeTemp);
+
+            List<LayoutToken> tokens = imageDoc.getTokenizations();
+
+            for (Map.Entry<String, Collection<DocumentPiece>> l : lb.entrySet()) {
+                if (l.getKey().equals("<headnote>") || l.getKey().equals("<footnote>") || l.getKey().equals("<header>") || l.getKey().equals("<page>")) {
+                    addPositionVO(l, tokens, rangeMap, pages);
+                }
+            }
+
+            if(rangeMap.size() == 0){
+                response = Response.status(Status.NO_CONTENT).build();
+            } else {
+                response = Response
+                    .ok()
+                    .type("application/json")
+                    .entity(rangeMap)
+                    .build();
+            }
+        } catch (NoSuchElementException nseExp) {
+            LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
+            response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (Exception exp) {
+            LOGGER.error("An unexpected exception occurs. ", exp);
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+        } finally {
+            if (originFile != null)
+                IOUtilities.removeTempFile(originFile);
+
+            if (assetPath != null) {
+                IOUtilities.removeTempDirectory(assetPath);
+            }
+
+            if (engine != null) {
+                GrobidPoolingFactory.returnEngine(engine);
+            }
+        }
+
+        LOGGER.debug(methodLogOut());
+        return response;
+
+    }
+
+    public Response processBodyImages(InputStream inputStream) {
+        LOGGER.debug(methodLogIn());
+        Response response = null;
+        String retVal = null;
+        File originFile = null;
+        Engine engine = null;
+        String assetPath = null;
+        try {
+            engine = Engine.getEngine(true);
+            // conservative check, if no engine is free in the pool a NoSuchElementException is normally thrown
+            if (engine == null) {
+                throw new GrobidServiceException(
+                    "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
+            }
+
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+            originFile = IOUtilities.writeInputFile(dis);
+            byte[] digest = md.digest();
+            if (originFile == null) {
+                LOGGER.error("The input file cannot be written.");
+                throw new GrobidServiceException(
+                    "The input file cannot be written.", Status.INTERNAL_SERVER_ERROR);
+            }
+
+            // set the path for the asset files
+            assetPath = GrobidProperties.getTempPath().getPath() + File.separator + KeyGen.getKey();
+
+            String md5Str = DatatypeConverter.printHexBinary(digest).toUpperCase();
+
+            // starts conversion process
+            GrobidAnalysisConfig config =
+                GrobidAnalysisConfig.builder()
+                    .pdfAssetPath(new File(assetPath))
+                    .build();
+
+            Document imageDoc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+
+            Map<String, Collection<DocumentPiece>> lb = imageDoc.getLabeledBlocks().asMap();
+            List<Page> pages = imageDoc.getPages();
+            int pageSize = pages.size();
+            HashMap<Integer, List<PositionVO>> rangeMap = new HashMap<>();
+            for (int i = 0; i < pageSize; i++) {
+                rangeMap.put(i + 1, new ArrayList<PositionVO>());
+            }
+
+            List<LayoutToken> tokens = imageDoc.getTokenizations();
+
+            for (Map.Entry<String, Collection<DocumentPiece>> l : lb.entrySet()) {
+                if (l.getKey().equals("<headnote>") || l.getKey().equals("<footnote>") || l.getKey().equals("<header>") || l.getKey().equals("<page>") || l.getKey().equals("<annex>")) {
+                    addPositionVO(l, tokens, rangeMap, pages);
+                }
+            }
+            List<GraphicObject> images = imageDoc.getImages();
+            ArrayList<File> imageFiles = new ArrayList<>();
+
+            // headernote, footnote, page, header, references
+            int bodyStart = imageDoc.getLabeledBlocks().get("<body>").first().getLeft().getTokenDocPos();
+
+            imageFor:
+            for (GraphicObject image : images) {
+                if (image.getType() == GraphicObjectType.BITMAP) {
+                    if(image.getStartPosition() > bodyStart){
+                        boolean out = false;
+                        int page = image.getPage();
+                        BigDecimal x1 = BigDecimal.valueOf(image.getX());
+                        BigDecimal y1 = BigDecimal.valueOf(image.getY());
+                        BigDecimal width = BigDecimal.valueOf(image.getWidth());
+                        BigDecimal height = BigDecimal.valueOf(image.getHeight());
+                        BigDecimal x2 = x1.add(width);
+                        BigDecimal y2 = y1.add(height);
+                        List<PositionVO> positionVOS = rangeMap.get(page);
+                        if(positionVOS == null || positionVOS.size() == 0){
+                            out = true;
+                        }
+                        for (PositionVO positionVO : positionVOS) {
+
+                            if(x1.doubleValue() > positionVO.getX2() || x2.doubleValue() < positionVO.getX1() || y1.doubleValue() > positionVO.getY2() || y2.doubleValue() < positionVO.getY1()){
+                                out=true;
+                            }else{
+                                out=false;
+                                continue imageFor;
+                            }
+                        }
+                        if(out){
+                            String[] filePathSplit = image.getFilePath().split("/");
+                            String fileName = filePathSplit[filePathSplit.length - 1];
+                            imageFiles.add(new File(assetPath + File.separatorChar + fileName));
+                        }
+                    }
+                }
+            }
+
+
+            if(imageFiles == null || imageFiles.size() == 0){
+                response = Response.status(Status.NO_CONTENT).build();
+            } else {
+
+                response = Response.status(Status.OK).type("application/zip").build();
+
+                ByteArrayOutputStream ouputStream = new ByteArrayOutputStream();
+                ZipOutputStream out = new ZipOutputStream(ouputStream);
+
+                byte[] buffer = new byte[1024];
+                for (final File currFile : imageFiles) {
+                    if (currFile.getName().toLowerCase().endsWith(".jpg")
+                        || currFile.getName().toLowerCase().endsWith(".png")) {
+                        if(Files.size(currFile.toPath()) < 5000){
+                            continue;
+                        }
+                        try {
+                            ZipEntry ze = new ZipEntry(currFile.getName());
+                            out.putNextEntry(ze);
+                            FileInputStream in = new FileInputStream(currFile);
+                            int len;
+                            while ((len = in.read(buffer)) > 0) {
+                                out.write(buffer, 0, len);
+                            }
+                            in.close();
+                            out.closeEntry();
+                        } catch (IOException e) {
+                            throw new GrobidServiceException("IO Exception when zipping", e, Status.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                }
+                out.finish();
+
+                response = Response
+                    .ok()
+                    .type("application/zip")
+                    .entity(ouputStream.toByteArray())
+                    .header("Content-Disposition", "attachment; filename=\"result.zip\"")
+                    .build();
+                out.close();
+            }
+        } catch (NoSuchElementException nseExp) {
+            LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
+            response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (Exception exp) {
+            LOGGER.error("An unexpected exception occurs. ", exp);
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+        } finally {
+            if (originFile != null)
+                IOUtilities.removeTempFile(originFile);
+
+            if (assetPath != null) {
+                IOUtilities.removeTempDirectory(assetPath);
+            }
+
+            if (engine != null) {
+                GrobidPoolingFactory.returnEngine(engine);
+            }
+        }
+
+        LOGGER.debug(methodLogOut());
+        return response;
+
+    }
+
+    private void addPositionVO(Map.Entry<String, Collection<DocumentPiece>> l, List<LayoutToken> tokens, HashMap<Integer,
+        List<PositionVO>> rangeMap, List<Page> pages) {
+
+        Collection<DocumentPiece> header = l.getValue();
+        for (DocumentPiece p : header) {
+            int leftToken = p.getLeft().getTokenDocPos();
+            int rightToken = p.getRight().getTokenDocPos()-2;
+            LayoutToken leftTokenLayout = tokens.get(leftToken);
+            int leftPage = leftTokenLayout.getPage();
+            double x1 = Double.MAX_VALUE;
+            double x2 = 0.0;
+            double y1 = Double.MAX_VALUE;
+            double y2 = 0.0;
+
+
+            for(int i=leftToken; i<=rightToken; i++){
+                LayoutToken layoutToken = tokens.get(i);
+                BigDecimal bigX = new BigDecimal(layoutToken.getX());
+                BigDecimal bigY = new BigDecimal(layoutToken.getY());
+                BigDecimal bigWidth = new BigDecimal(layoutToken.getWidth());
+                BigDecimal bigHeight = new BigDecimal(layoutToken.getHeight());
+
+                if (bigX.equals(BigDecimal.valueOf(-1)) || bigY.equals(BigDecimal.valueOf(-1))) {
+                    continue;
+                }else{
+                    String key = l.getKey();
+                    if (Math.abs(y2 - layoutToken.getY()) > pages.get(1).getHeight() / 2 && y2 != 0.0) {
+                        rangeMap.get(leftPage).add(new PositionVO(leftPage, x1,x2,y1,y2));
+                        x1 = layoutToken.getX();
+                        x2 = bigX.add(bigWidth).doubleValue();
+                        y1 = layoutToken.getY();
+                        y2 = bigY.add(bigHeight).doubleValue();
+                    }
+                    if (x1 > layoutToken.getX()) {
+//                        x1 = BigDecimal.valueOf(layoutToken.getX()).subtract(BigDecimal.valueOf(10.0)).doubleValue();
+                        x1 = layoutToken.getX();
+                    }
+                    if (x2 < bigX.add(bigWidth).doubleValue()) {
+//                        x2 = bigX.add(bigWidth.add(BigDecimal.valueOf(10.0))).doubleValue();
+                        x2 = bigX.add(bigWidth).doubleValue();
+                    }
+                    if (y1 > layoutToken.getY()) {
+                        if (l.getKey().equals("<headnote>")) {
+                            y1 = 0.0;
+                        }else{
+                            y1 = layoutToken.getY();
+                        }
+                    }
+                    if (y2 < bigY.add(bigHeight).doubleValue()) {
+                        if (l.getKey().equals("<footnote>")) {
+                            y2 = Double.MAX_VALUE;
+                        }else{
+                            y2 = bigY.add(bigHeight).doubleValue();
+                        }
+                    }
+                }
+            }
+
+            Page page = pages.get(leftPage - 1);
+            BigDecimal pageY1 = BigDecimal.valueOf(page.getMainArea().getY());
+            BigDecimal pageY2 = BigDecimal.valueOf(page.getMainArea().getY2());
+
+            double pageCenter = pageY2.subtract(pageY1).divide(BigDecimal.valueOf(2.0)).doubleValue();
+
+
+            if(l.getKey().equals("<headnote>")){
+                if(y2 > pageCenter){
+                    continue;
+                }
+            } else if (l.getKey().equals("<footnote>")) {
+                if (y1 < pageCenter) {
+                    continue;
+                }
+            } else if (l.getKey().equals("<header>")) {
+                if (leftPage == 1){
+                    if(!leftTokenLayout.getLabels().get(0).getLabel().equals("<submission>")){
+                        y1 = 0;
+                    }
+                }
+            }
+            PositionVO pos = new PositionVO(leftPage, x1, x2, y1, y2);
+            rangeMap.get(leftPage).add(pos);
+
+        }
     }
 
     /**

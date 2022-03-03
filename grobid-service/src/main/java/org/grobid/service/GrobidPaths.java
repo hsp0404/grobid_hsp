@@ -45,6 +45,11 @@ public interface GrobidPaths {
 	 */
 	String PATH_FULL_TEXT_ASSET = "processFulltextAssetDocument";
 
+    String PATH_GET_BODY_IMAGE = "getBodyImages";
+
+    String PATH_GET_IMAGE = "getImage";
+
+    String PATH_GET_TABLE_IMAGE = "getTableImage";
 	/**
 	 * path extension for processing full text of documents.
 	 */
@@ -159,5 +164,11 @@ public interface GrobidPaths {
 	 * path for getting the advancement of the training of a model or 
 	 * the evaluation metrics of the new model if the training is completed
 	 */
-	String PATH_TRAINING_RESULT = "trainingResult";		
+	String PATH_TRAINING_RESULT = "trainingResult";
+
+    String PATH_META_DATA = "getMeta";
+
+    String PATH_RANGE = "getRange";
+
+    String PATH_TRAIN = "trainTempPdf";
 }

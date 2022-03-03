@@ -4026,7 +4026,7 @@ var PDFPageView = (function PDFPageViewClosure() {
         }
         this.annotationLayer.render(this.viewport, 'display');
       }
-      div.setAttribute('data-loaded', true);
+      div.setAttribute('\data-loaded', true);
 
       if (self.onBeforeDraw) {
         self.onBeforeDraw();

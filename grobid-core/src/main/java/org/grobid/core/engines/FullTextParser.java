@@ -110,6 +110,107 @@ public class FullTextParser extends AbstractParser {
 		return processing(documentSource, config);
 	}
 
+    public Document meta(File inputPdf,
+                         String md5Str,
+                         GrobidAnalysisConfig config) throws Exception {
+        DocumentSource documentSource =
+            DocumentSource.fromPdf(inputPdf, -1, -1, config.getPdfAssetPath() != null, true, false);
+        documentSource.setMD5(md5Str);
+        return MetaProcessing(documentSource, config);
+    }
+
+    public Document MetaProcessing(DocumentSource documentSource, GrobidAnalysisConfig config) {
+        if (tmpPath == null) {
+            throw new GrobidResourceException("Cannot process pdf file, because temp path is null.");
+        }
+        if (!tmpPath.exists()) {
+            throw new GrobidResourceException("Cannot process pdf file, because temp path '" +
+                tmpPath.getAbsolutePath() + "' does not exists.");
+        }
+        try {
+            // general segmentation
+            Document doc = parsers.getSegmentationParser().processing(documentSource, config);
+            SortedSet<DocumentPiece> documentBodyParts = doc.getDocumentPart(SegmentationLabels.BODY);
+
+            // header processing
+            BiblioItem resHeader = new BiblioItem();
+            Pair<String, LayoutTokenization> featSeg = null;
+
+            // using the segmentation model to identify the header zones
+            parsers.getHeaderParser().processingHeaderSection(config, doc, resHeader, false);
+
+            // structure the abstract using the fulltext model
+            if (isNotBlank(resHeader.getAbstract())) {
+                //List<LayoutToken> abstractTokens = resHeader.getLayoutTokens(TaggingLabels.HEADER_ABSTRACT);
+                List<LayoutToken> abstractTokens = resHeader.getAbstractTokensWorkingCopy();
+                if (CollectionUtils.isNotEmpty(abstractTokens)) {
+                    abstractTokens = BiblioItem.cleanAbstractLayoutTokens(abstractTokens);
+                    Pair<String, List<LayoutToken>> abstractProcessed = processShort(abstractTokens, doc);
+                    if (abstractProcessed != null) {
+                        // neutralize figure and table annotations (will be considered as paragraphs)
+                        String labeledAbstract = abstractProcessed.getLeft();
+                        labeledAbstract = postProcessLabeledAbstract(labeledAbstract);
+                        resHeader.setLabeledAbstract(labeledAbstract);
+                        resHeader.setLayoutTokensForLabel(abstractProcessed.getRight(), TaggingLabels.HEADER_ABSTRACT);
+                    }
+                }
+            }
+
+            // citation processing
+            // consolidation, if selected, is not done individually for each citation but
+            // in a second stage for all citations which is much faster
+            List<BibDataSet> resCitations = parsers.getCitationParser().
+                processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+
+            // consolidate the set
+            if (config.getConsolidateCitations() != 0 && resCitations != null) {
+                Consolidation consolidator = Consolidation.getInstance();
+                if (consolidator.getCntManager() == null)
+                    consolidator.setCntManager(Engine.getCntManager());
+                try {
+                    Map<Integer,BiblioItem> resConsolidation = consolidator.consolidate(resCitations);
+                    for(int i=0; i<resCitations.size(); i++) {
+                        BiblioItem resCitation = resCitations.get(i).getResBib();
+                        BiblioItem bibo = resConsolidation.get(i);
+                        if (bibo != null) {
+                            if (config.getConsolidateCitations() == 1)
+                                BiblioItem.correct(resCitation, bibo);
+                            else if (config.getConsolidateCitations() == 2)
+                                BiblioItem.injectIdentifiers(resCitation, bibo);
+                        }
+                    }
+                } catch(Exception e) {
+                    throw new GrobidException(
+                        "An exception occured while running consolidation on bibliographical references.", e);
+                }
+            }
+            doc.setBibDataSets(resCitations);
+
+            // post-process reference and footnote callout to keep them consistent (e.g. for example avoid that a footnote
+            // callout in superscript is by error labeled as a numerical reference callout)
+            List<MarkerType> markerTypes = null;
+
+//            if (resultBody != null)
+//                markerTypes = postProcessCallout(resultBody, layoutTokenization);
+
+            // final combination
+            toTEI(doc, // document
+//                resultBody, resultAnnex, // labeled data for body and annex
+                null, null,
+//                layoutTokenization, tokenizationsBody2, // tokenization for body and annex
+                null, null,
+                resHeader, // header
+//                figures, tables, equations, markerTypes,
+                null, null, null, null,
+                config);
+            return doc;
+        } catch (GrobidException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new GrobidException("An exception occurred while running Grobid.", e);
+        }
+    }
+
 	/**
      * Machine-learning recognition of the complete full text structures.
      *
@@ -129,7 +230,8 @@ public class FullTextParser extends AbstractParser {
         try {
 			// general segmentation
 			Document doc = parsers.getSegmentationParser().processing(documentSource, config);
-			SortedSet<DocumentPiece> documentBodyParts = doc.getDocumentPart(SegmentationLabels.BODY);
+//            List<GraphicObject> images = doc.getImages();
+            SortedSet<DocumentPiece> documentBodyParts = doc.getDocumentPart(SegmentationLabels.BODY);
 
             // header processing
             BiblioItem resHeader = new BiblioItem();
@@ -197,6 +299,8 @@ public class FullTextParser extends AbstractParser {
                     }
                 }
             }
+
+            doc.setResHeader(resHeader);
 
             // citation processing
             // consolidation, if selected, is not done individually for each citation but 

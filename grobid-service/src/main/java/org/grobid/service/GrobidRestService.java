@@ -3,10 +3,14 @@ package org.grobid.service;
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.apache.commons.io.FilenameUtils;
+import org.glassfish.jersey.media.multipart.BodyPart;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.grobid.core.engines.config.GrobidAnalysisConfig;
 import org.grobid.core.factory.AbstractEngineFactory;
+import org.grobid.core.meta.PositionVO;
 import org.grobid.core.utilities.GrobidProperties;
 import org.grobid.core.engines.Engine;
 import org.grobid.core.factory.GrobidPoolingFactory;
@@ -25,10 +29,11 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * RESTful service for the GROBID system.
@@ -202,6 +207,24 @@ public class GrobidRestService implements GrobidPaths {
         return processHeaderDocumentReturnBibTeX_post(inputStream, consolidate, includeRawAffiliations);
     }
 
+
+    @Path(PATH_META_DATA)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @POST
+    public Response getMeta(
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart) throws Exception {
+        LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+        for (BodyPart part : bodyPart.getParent().getBodyParts()) {
+            String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
+            InputStream input = part.getEntityAs(InputStream.class);
+            paramMap.put(fileName, input);
+        }
+        return getMetaData(
+            paramMap
+        );
+    }
+
     @Path(PATH_FULL_TEXT)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_XML)
@@ -244,6 +267,17 @@ public class GrobidRestService implements GrobidPaths {
             includeRawAffiliations, includeRawCitations,
             startPage, endPage, generateIDs, segmentSentences, coordinates
         );
+    }
+
+    @Path(PATH_TRAIN)
+    @GET
+    public void trainTempPdf(){
+        restProcessFiles.trainPdf();
+    }
+
+    private Response getMetaData(Map<String, InputStream> paramMap) throws Exception {
+
+        return restProcessFiles.getMetaData(paramMap);
     }
 
     private Response processFulltext(InputStream inputStream,
@@ -308,6 +342,54 @@ public class GrobidRestService implements GrobidPaths {
         return consol;
     }
 
+    @Path(PATH_GET_BODY_IMAGE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces("application/zip")
+    @POST
+    public Response getImages(
+        @FormDataParam(INPUT) InputStream inputStream) throws Exception {
+        return proccessBodyImages(
+            inputStream);
+    }
+
+    @Path(PATH_GET_IMAGE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @POST
+    public Response getImage(
+        @FormDataParam("path") String path
+    ) throws Exception {
+        File file = new File(path);
+        Response.ResponseBuilder responseBuilder = Response.ok((Object) file);
+        responseBuilder.header("Content-Disposition", "attachment; filename=figure.png");
+        return responseBuilder.build();
+    }
+
+    @Path(PATH_GET_TABLE_IMAGE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @POST
+    public Response getTableImage(
+        @FormDataParam("areaArray") List<PositionVO> positionVO, @FormDataParam(INPUT) InputStream inputStream
+    ) throws Exception {
+        System.out.println(positionVO.get(0));
+        System.out.println(inputStream);
+        return null;
+    }
+
+    @Path(PATH_RANGE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @POST
+    public Response getRange(
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart) throws Exception {
+        InputStream input = bodyPart.getParent().getBodyParts().get(0).getEntityAs(InputStream.class);
+        return proccessRange(input);
+
+    }
+
+
+
     @Path(PATH_FULL_TEXT_ASSET)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces("application/zip")
@@ -348,6 +430,16 @@ public class GrobidRestService implements GrobidPaths {
             includeRawAffiliations, includeRawCitations,
             startPage, endPage, generateIDs, segmentSentences
         );
+    }
+
+    private Response proccessBodyImages(InputStream inputStream) {
+        return restProcessFiles.processBodyImages(inputStream);
+    }
+
+
+
+    private Response proccessRange(InputStream inputStream) {
+        return restProcessFiles.processRange(inputStream);
     }
 
     private Response processStatelessFulltextAssetHelper(InputStream inputStream,

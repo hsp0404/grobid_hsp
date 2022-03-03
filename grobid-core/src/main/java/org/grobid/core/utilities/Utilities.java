@@ -217,7 +217,7 @@ public class Utilities {
 				english_title = english_title.substring(0,
 						english_title.length() - 1).trim();
 			}
-			//english_title = english_title.replace("@BULLET", " • ");
+			english_title = english_title.replace("@BULLET", " • ");
 			item.setEnglishTitle(english_title);
 		}
 

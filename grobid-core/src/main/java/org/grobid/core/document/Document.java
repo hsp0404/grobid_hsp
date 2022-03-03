@@ -351,6 +351,7 @@ public class Document implements Serializable {
 
             // get a new instance of parser
             parseInputStream(in, spf, parser);
+
             tokenizations = parser.getTokenization();
             if (in != null) {
                 try {

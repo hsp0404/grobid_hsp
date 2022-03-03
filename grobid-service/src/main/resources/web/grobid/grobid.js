@@ -38,7 +38,7 @@ var grobid = (function($) {
 	}
 
 	$(document).ready(function() {
-		$("#subTitle").html("About");
+		$("#subTitle").html("API");
 		$("#divAbout").show();
 		//$("#divAdmin").hide();
 
@@ -61,6 +61,16 @@ var grobid = (function($) {
 		createInputFile3();
 		setBaseUrl('processHeaderDocument');
 		block = 0;
+
+        $('#api_file').change((e) => {
+            $('.file-list-li').remove()
+            $(e.target.files).each((i, elem) => {
+                let li = document.createElement("li");
+                li.className = "file-list-li"
+                li.innerText = elem.name;
+                $('#file-list').append(li);
+            })
+        })
 
 		$('#selectedService').change(function() {
 			processChange();
@@ -86,6 +96,7 @@ var grobid = (function($) {
 
 		$('#submitRequest2').bind('click', submitQuery2);
 		$('#submitRequest3').bind('click', submitQuery3);
+		$('#submitRequest4').bind('click', submitQuery4);
 
 		// bind download buttons with download methods
 		$('#btn_download').bind('click', download);
@@ -103,6 +114,56 @@ var grobid = (function($) {
 	        dataType: "text"
 	        });*/
 
+        $('.pdf_button').click(function() {
+            if ((document.getElementById("api_file").files[0].type == 'application/pdf') ||
+                (document.getElementById("api_file").files[0].name.endsWith(".pdf")) ||
+                (document.getElementById("api_file").files[0].name.endsWith(".PDF"))) {
+                var reader = new FileReader();
+                reader.onloadend = function () {
+                    let pdfAsArray = new Uint8Array(reader.result);
+                    let pdf_window = window.open("", "pdf");
+                    let window_div = pdf_window.document.createElement("div")
+                    window_div.id = "requestResult2";
+                    pdf_window.document.body.appendChild(window_div);
+                    var container = pdf_window.document.getElementById("requestResult2");
+
+                    // Use PDFJS to render a pdfDocument from pdf array
+                    // var frame = '<iframe id="pdfViewer" src="resources/pdf.js/web/viewer.html?file=" style="width: 100%; height: 1000px;"></iframe>';
+                    $(window_div).html();
+                    let frame = $("<iframe id='myId'></iframe>");
+                    frame.attr('src', "resources/pdf.js/web/viewer.html?file=");
+                                    // .attr('src', "resources/pdf.js/web/viewer.html?file=")
+                                    // .attr('width', '100%')
+                                    // .attr('height', '1000px')
+                                    // .onload(function()
+                                    // {
+                                    //     console.log(pdfAsArray)
+                                    // });
+                    $(window_div).append(frame)
+
+
+                    // var frame = pdf_window.document.createElement("iframe");
+                    // frame.src = "resources/pdf.js/web/viewer.html?file=";
+                    // frame.style.width = "100%";
+                    // frame.style.height = "1000px";
+                    // frame.onload = function () {
+                    //     console.log(pdfAsArray)
+                    //     console.log(this.contentWindow)
+                    //     this.contentWindow.PDFViewerApplication.open(pdfAsArray);
+                    // }
+                    //
+                    // pdf_window.window.document.body.appendChild(frame);
+
+                    // var pdfjsframe = pdf_window.document.getElementById('pdfViewer');
+                    // pdfjsframe.onloadend = function () {
+                    //     console.log(pdfAsArray)
+                    //     pdfjsframe.contentWindow.PDFViewerApplication.open(pdfAsArray);
+                    // }
+                }
+                reader.readAsArrayBuffer(document.getElementById("api_file").files[0]);
+            }
+        })
+
 		$("#about").click(function() {
 			$("#about").attr('class', 'section-active');
 			$("#rest").attr('class', 'section-not-active');
@@ -111,7 +172,7 @@ var grobid = (function($) {
 			$("#doc").attr('class', 'section-not-active');
 			$("#patent").attr('class', 'section-not-active');
 
-			$("#subTitle").html("About");
+			$("#subTitle").html("API");
 			$("#subTitle").show();
 
 			$("#divAbout").show();
@@ -634,7 +695,7 @@ var grobid = (function($) {
 				    var response = e.target.response;
 				    //var response = JSON.parse(xhr.responseText);
 				 	//console.log(response);
-				    SubmitSuccesful3(response);
+
 				} else if (xhr.status != 200) {
 					AjaxError3(xhr);
 				}
@@ -674,6 +735,409 @@ var grobid = (function($) {
 			}
 		}
 	}
+
+    function submitQuery4(){
+        if(document.getElementById("api_file").files.length > 0){
+            $('.file-list-li').each((i,e) => {
+                $(e).addClass("li-processing")
+            })
+            var form = document.getElementById('apiForm');
+            var formData = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            var url = "/api/getMeta"
+            xhr.responseType = 'json';
+            xhr.open('POST', url, true);
+            ShowRequest2();
+            xhr.onreadystatechange = function (e) {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        // document.getElementById("json-viewer").innerText = '';
+                        let response = e.target.response;
+                        // $('#json-viewer').jsonViewer(response);
+                        $('.file-list-li').each((i,e)=>{
+                            let area = document.createElement("div");
+                            let img_viewer = document.createElement("div");
+                            // let spinner = document.createElement("div");
+                            let json_viewer = document.createElement("pre");
+                            let pdf_button = document.createElement("button");
+
+                            let figures = response[i].figures;
+                            let tables = response[i].tables;
+                            let assetPath = response[i].assetPath;
+
+                            console.log(figures);
+                            console.log(tables);
+                            console.log(assetPath);
+
+                            // spinner.className = 'loading'
+                            for(let i=0; i<figures.length; i++){
+                                let preview = document.createElement("div");
+                                let caption = document.createElement("small");
+                                let image = figures[i].bitmapGraphicObjects;
+                                if(image){
+                                    if(image.length === 1){
+                                        getImage(assetPath + "/" + image[0].uri.split("/")[1], i);
+                                    }else{
+                                        console.log('more than one image')
+                                    }
+                                    preview.className = "preview-img";
+                                    preview.id = "preview-box-"+i;
+                                    caption.className = "preview-caption";
+                                    caption.innerText = figures[i].caption.replaceAll("\n", "");
+                                    preview.onclick = (e) => {
+                                        e.stopPropagation()
+                                        let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + "px, height=" + e.target.naturalHeight + 30 + "px");
+                                        figureWin.document.write("<html><body style='margin:0'>")
+                                        figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.src + "' border=0></a><br/>");
+                                        figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
+                                        figureWin.document.write("</body><html>");
+                                    }
+
+                                    preview.append(caption);
+                                    img_viewer.append(preview);
+                                }
+                            }
+                            let file = document.getElementById("api_file").files[i];
+
+                            delete response[i].figures;
+                            delete response[i].tables;
+
+                            area.style.display = 'none';
+                            $(json_viewer).jsonViewer(response[i]);
+                            img_viewer.id = "img_viewer_"+i
+                            img_viewer.className = "img_viewer"
+
+                            for(let k=0; k<tables.length; k++){
+
+                                let preview = document.createElement("div");
+                                let caption = document.createElement("small");
+                                let header = document.createElement("small");
+                                caption.className = "preview-caption";
+                                caption.innerText = tables[k].caption;
+                                header.className = "preview-caption";
+                                header.innerText = tables[k].header;
+                                let textArea = tables[k].textArea
+                                for(let j=0; j<textArea.length; j++){
+                                    let fileReader = new FileReader();
+                                    fileReader.onload =(ev) => {
+                                        PDFJS.getDocument(fileReader.result).then((pdf) => {
+                                            pdf.getPage(textArea[j].page)
+                                                .then((page) => {
+                                                    let scale = 2;
+                                                    let viewport = page.getViewport(scale);
+                                                    let canvas = document.createElement('canvas');
+                                                    let context = canvas.getContext("2d");
+                                                    canvas.height = viewport.height;
+                                                    canvas.width = viewport.width;
+                                                    let task = page.render({canvasContext: context, viewport: viewport})
+                                                    task.promise.then(() => {
+                                                        // let pageImage = new Image();
+                                                        // pageImage.src = canvas.toDataURL('image/png');
+                                                        let resultCanvas = document.createElement('canvas');
+                                                        let resultContext = resultCanvas.getContext('2d');
+                                                        resultCanvas.width = (textArea[j].width*2)+10;
+                                                        resultCanvas.height = (textArea[j].height*2)+10;
+                                                        resultContext.drawImage(canvas, textArea[j].x*2, textArea[j].y*2, textArea[j].width*2, textArea[j].height*2, 0,0, (textArea[j].width*2)+10, (textArea[j].height*2)+10);
+                                                        resultCanvas.className = "body-img";
+                                                        preview.append(resultCanvas);
+                                                        preview.append(header);
+                                                    })
+
+                                                })
+                                        })
+                                    }
+                                    fileReader.readAsArrayBuffer(file);
+
+                                }
+
+                                preview.className = 'preview-img';
+                                preview.onclick = (e) => {
+                                    e.stopPropagation()
+                                    let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + "px, height=" + e.target.naturalHeight + 30 + "px");
+                                    figureWin.document.write("<html><body style='margin:0'>")
+                                    figureWin.document.write("<small style='font-size: 25px'>header : "+ header.innerText + "</small><br/>")
+                                    figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.toDataURL('image/png') + "' border=0></a><br/>");
+                                    figureWin.document.write("<small style='font-size: 25px'>caption : "+ caption.innerText + "</small>")
+                                    figureWin.document.write("</body><html>");
+                                }
+                                img_viewer.append(preview);
+
+                            }
+
+                            pdf_button.innerText = "view pdf";
+                            pdf_button.id = "pdf"+i;
+                            pdf_button.onclick = (e) => {
+                                e.stopPropagation()
+                                viewPdf(i);
+                            }
+
+                            area.append(pdf_button);
+                            area.append(img_viewer);
+                            area.append(json_viewer);
+
+                            area.id = "result_area_"+i
+                            area.className = "result_areas"
+
+                            e.append(area);
+                            $(e).removeClass("li-processing");
+                            $(e).addClass("li-done");
+                        })
+
+
+                        let files = document.getElementById('api_file').files;
+                        for(let i=0; i<files.length; i++){
+                            // getImages(files[i], i);
+                        }
+
+                        $('.file-list-li').each((i,e) => {
+                            $(e).on("click", function(event) {
+                                event.stopPropagation();
+                                let display = $("#result_area_"+i).css("display");
+                                if(display == 'none'){
+                                    $(e).addClass("list-open")
+                                    $('#result_area_'+i).show();
+                                }else{
+                                    $(e).removeClass("list-open")
+                                    $('#result_area_'+i).hide();
+                                }
+                            })
+                        })
+
+                        // $('.result_areas').each((i,e) => {
+                        //     $(e).off('click');
+                        //     $(e).css('cursor', '');
+                        // })
+
+                        // let trainXhr = new XMLHttpRequest();
+                        // let trainUrl = "/api/trainTempPdf"
+                        // trainXhr.open("GET", trainUrl, true);
+                        // trainXhr.send();
+                    } else {
+                        //AjaxError2("Response " + xhr.status + ": " + xhr.responseText);
+                        AjaxError2("Response " + xhr.status + ": " );
+                    }
+                }
+            };
+            xhr.send(formData);
+        }else{
+            alert('no file!');
+        }
+    }
+
+    function getPageImage(fileIndex ,page){
+        let file = document.getElementById("api_file").files[fileIndex];
+        let fileReader = new FileReader();
+        fileReader.onloadend = function(ev) {
+            console.log(ev);
+            PDFJS.getDocument(fileReader.result).then(function getPdfHelloWorld(pdf) {
+                //
+                // Fetch the first page
+                //
+                pdf.getPage(page).then(function getPageHelloWorld(page) {
+                    var scale = 1.5;
+                    var viewport = page.getViewport(scale);
+
+                    //
+                    // Prepare canvas using PDF page dimensions
+                    //
+                    var canvas = document.getElementById('the-canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    //
+                    // Render PDF page into canvas context
+                    //
+                    var task = page.render({canvasContext: context, viewport: viewport})
+                    task.promise.then(function(){
+                        let pageImage = new Image();
+                        pageImage.src = canvas.toDataURL('image/jpeg');
+
+                    });
+                });
+            }, function(error){
+                console.log(error);
+            });
+        };
+        fileReader.readAsArrayBuffer(file);
+    }
+
+    function getImage(path, index){
+        let imageXhr = new XMLHttpRequest();
+        let imgUrl = "/api/getImage";
+        let form = new FormData();
+        form.append("path", path);
+        imageXhr.responseType = "arraybuffer";
+        imageXhr.open('POST', imgUrl, true);
+        imageXhr.onreadystatechange = function() {
+            if(imageXhr.readyState == 4) {
+                if (imageXhr.status == 200) {
+                    let img = document.createElement('img');
+                    img.src = window.URL.createObjectURL(new Blob([imageXhr.response]));
+                    img.className = ("body-img");
+                    $("#preview-box-"+index).prepend(img);
+                }
+            }
+        }
+        imageXhr.send(form);
+    }
+
+    function getTableImage(areaArray, pdfFile, index){
+        let tableXhr = new XMLHttpRequest();
+        let tableUrl = "/api/getTableImage";
+        let form = new FormData();
+        // for (let key in areaArray) {
+        //     form.append(key, areaArray[key])
+        // }
+        form.append("areaArray", areaArray)
+        form.append("input", pdfFile);
+        tableXhr.responseType = "arraybuffer";
+        tableXhr.open("POST", tableUrl, true);
+        tableXhr.onreadystatechange = function() {
+            if(tableXhr.readyState == 4) {
+                if (tableXhr.status == 200) {
+                    let img = document.createElement('img');
+                    img.src = window.URL.createObjectURL(new Blob([tableXhr.response]));
+                    img.className = ("body-img");
+                    $("#preview-table-box-"+index).prepend(img);
+                }
+            }
+        }
+        tableXhr.send(form);
+
+    }
+
+    function viewPdf(i){
+        const pdfViewer = document.getElementById('pdfViewer');
+        if(pdfViewer.style.display == 'none'){
+            $(pdfViewer).show();
+        }
+        document.getElementsByClassName('container_')[0].style.width="1800px";
+        let reader = new FileReader();
+        reader.onloadend = function() {
+            let pdfAsArray = new Uint8Array(reader.result);
+            pdfViewer.contentWindow.PDFViewerApplication.open(pdfAsArray);
+            // let xhr = new XMLHttpRequest()
+            // let url = '/api/getRange';
+            // let form = new FormData();
+            // form.append("input", document.getElementById("api_file").files[i]);
+            // xhr.responseType = 'json';
+            // xhr.open("POST", url, true);
+            // xhr.onreadystatechange = function(e) {
+            //     if(xhr.readyState == 4){
+            //         if (xhr.status == 200) {
+            //             let res = e.target.response;
+            //
+            //            //  let pdfV = pdfViewer.contentWindow.PDFViewerApplication.pdfViewer;
+            //            //  console.log(pdfV);
+            //            //  let loadingTask = pdfViewer.contentWindow.PDFViewerApplication.pdfViewer.getPageView(3);
+            //            // console.log(loadingTask)
+            //
+            //             const pageSize = Object.keys(res).length - 1;
+            //             const pwidth = res[0][0].x1;
+            //             const pheight = res[0][0].y1;
+            //             let canvas;
+            //             let document = pdfViewer.contentWindow.document;
+            //             for(let z=1; z<pageSize; z++){
+            //                 let pageView = pdfViewer.contentWindow.PDFViewerApplication.pdfViewer.getPageView(z);
+            //                 if (pageView.renderingState == 0) {
+            //                     pageView.renderingQueue.renderView(pageView);
+            //                     // pageView.draw()
+            //                     //     .then(() => {
+            //                             canvas = document.getElementById('page'+z);
+            //                             let ctx = canvas.getContext('2d');
+            //                             ctx.globalAlpha = 0.2;
+            //                             let cwidth = canvas.width;
+            //                             let cheight = canvas.height;
+            //                             let w = cwidth / pwidth;
+            //                             let h = cheight / pheight;
+            //                             let rangeArr = res[z];
+            //                             for(let j=0; j<rangeArr.length; j++){
+            //                                 let p = rangeArr[j];
+            //                                 ctx.fillRect(p.x1 * w, p.y1 * h, (p.x2 - p.x1) * w, (p.y2 - p.y1) * h);
+            //                             }
+            //                         // })
+            //                 }else{
+            //                     canvas = document.getElementById('page'+z);
+            //                     let ctx = canvas.getContext('2d');
+            //                     ctx.globalAlpha = 0.2;
+            //                     let cwidth = canvas.width;
+            //                     let cheight = canvas.height;
+            //                     let w = cwidth / pwidth;
+            //                     let h = cheight / pheight;
+            //                     let rangeArr = res[z];
+            //                     for(let j=0; j<rangeArr.length; j++){
+            //                         let p = rangeArr[j];
+            //                         ctx.fillRect(p.x1 * w, p.y1 * h, (p.x2 - p.x1) * w, (p.y2 - p.y1) * h);
+            //                     }
+            //                 }
+            //
+            //
+            //             }
+            //         }
+            //     }
+            // }
+            // xhr.send(form);
+
+        }
+        reader.readAsArrayBuffer(document.getElementById("api_file").files[i]);
+
+    }
+
+    function getImages(file, i){
+        let form = new FormData();
+        form.append("input", file);
+        let imageXhr = new XMLHttpRequest();
+        let imgUrl = "/api/getBodyImages";
+        imageXhr.responseType = "arraybuffer";
+        imageXhr.open('POST', imgUrl, true);
+        imageXhr.onreadystatechange = function() {
+            if(imageXhr.readyState == 4){
+                if(imageXhr.status == 200){
+                    let jszip = new JSZip();
+                    jszip.loadAsync(imageXhr.response)
+                        .then(function (zip) {
+                            zip.forEach(function(fileName){
+                                let file = zip.file(fileName);
+                                file.async("blob").then(
+                                    function success(buf){
+                                        let img = document.createElement('img');
+                                        img.src = window.URL.createObjectURL(buf);
+                                        img.className = ("body-img");
+                                        img.id = fileName;
+                                        img.style.order = fileName.split("-")[1].split(".")[0]
+                                        img.onmouseenter = (e) => {
+                                            let originImageArea = document.createElement("div");
+                                            let text = document.createElement("span");
+                                            text.innerText = "figure"
+                                            let originImg = document.createElement("img");
+                                            originImg.src = window.URL.createObjectURL(buf);
+                                            originImageArea.appendChild(originImg);
+                                            originImageArea.appendChild(document.createElement("br"));
+                                            originImageArea.appendChild(text);
+                                            originImageArea.style.left = e.clientX
+                                            originImageArea.style.top = e.target.scrollTop + e.target.scrollHeight;
+                                            originImageArea.className = "hover-image"
+                                            $('#img_viewer_'+i).append(originImageArea);
+                                        }
+                                        img.onmouseleave = (e) => {
+                                            $('#img_viewer_'+i).find('.hover-image').remove();
+                                        }
+                                        $('#img_viewer_'+i).append(img);
+                                    }
+                                )
+                            })
+                        $('#img_viewer_'+i).find(".loading").remove();
+                        })
+                        .catch((err) =>{})
+                }else if(imageXhr.status == 204){
+                    document.getElementById("img_viewer_"+i).innerText = "no content"
+                }
+            }
+
+        }
+        imageXhr.send(form)
+    }
 
 	function setupAnnotations(response) {
 		// we must check/wait that the corresponding PDF page is rendered at this point

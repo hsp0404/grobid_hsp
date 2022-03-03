@@ -26,6 +26,40 @@ body {
   /*font-family: "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;*/
 }
 
+.body-img {
+    border: 2px solid blue;
+    height:200px;
+    width: 200px;
+}
+
+.hover-image{
+    position: absolute;
+    border: 1px solid black;
+    padding-bottom: 20px;
+}
+
+.hover-image span{
+    color: black;
+    font-size: 20px;
+
+}
+
+.preview-caption {
+    display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 200px;
+    color: black;
+    border: 1px blue solid;
+}
+
+.preview-img {
+    width: 200px;
+    height: 230px;
+    margin-bottom: 20px;
+}
+
 .content {
   background-color: #fff;
   padding: 20px;
@@ -40,6 +74,58 @@ body {
   /*font-family: "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
   word-break:normal;*/
 }
+#file-list{
+    margin: 0 0 10px 0px;
+    list-style-type: none;
+}
+
+.file-list-li{
+    font-size: 20px;
+    margin-top: 15px;
+    padding-left: 35px;
+}
+
+.li-processing {
+    background-image: url(../img/spinner.gif);
+    background-repeat: no-repeat;
+    background-position: center left;
+    list-style-type: none;
+    color: red;
+}
+
+.li-done{
+    background-image: url(../img/arrow_right.png);
+    background-repeat: no-repeat;
+    background-size: 20px 19px;
+    color: blue;
+    cursor: pointer;
+}
+
+.list-open{
+    background-image: url(../img/arrow_down.png);
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+}
+
+.img_viewer {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    place-content: space-around;
+}
+
+/*.processing {*/
+/*    width: auto;*/
+/*    list-style: disc inside url("../img/spinner.gif");*/
+/*}*/
+
+.loading {
+    background-image: url("../img/spinner.gif");
+    background-repeat: no-repeat;
+    width: 40px;
+    height: 40px;
+}
+
 
 .page-header {
   background-color: #f5f5f5;
@@ -63,14 +149,14 @@ h4 {
 
 /*  For Code Snippets
         ============================================ */
-        
+
 code, pre {
     background-color: #fee9cc;
 }
 pre {
     padding: 16px 20px;
     margin: 10px 0;
-    -webkit-border-radius: 6px; 
+    -webkit-border-radius: 6px;
     -moz-border-radius: 6px;
     border-radius: 6px;
     max-width: 100%;
@@ -115,7 +201,7 @@ pre {
 
 a:focus{outline:thin dotted #BC0E0E;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px;}
 /*a:hover, a:active{outline:0;color:#BC0E0E;}*/
-a{color:#BC0E0E;text-decoration:none;}                
+a{color:#BC0E0E;text-decoration:none;}
 /*a:hover{color:#BC0E0E;text-decoration:underline;}*/
 a:hover{color:#BC0E0E;}
 
@@ -126,10 +212,10 @@ a.section-active { color: #BC0E0E; }
 span.section-not-active { color: #70695C; }
 span.section-active { color: #BC0E0E; }
 
-.table th{background-color:#FCF8E3;} 
-.table tr{background-color:#FCF8E3;}       
+.table th{background-color:#FCF8E3;}
+.table tr{background-color:#FCF8E3;}
 .table tbody tr.highlight td { background-color: #F2DEDE; }
-  
+
 p {word-break:normal;}
 /*span {word-break:normal;}*/
 
@@ -144,4 +230,8 @@ p {word-break:normal;}
 
 .popover{
   max-width: none;
-} 
+}
+
+#divAbout{
+    margin-top: 10px;
+}

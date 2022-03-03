@@ -291,7 +291,7 @@ public class TaggingLabels {
         register(HEADER_WEB);
         //register(HEADER_DEDICATION);
         register(HEADER_SUBMISSION);
-        //register(HEADER_ENTITLE);
+        register(HEADER_ENTITLE);
         //register(HEADER_INTRO);
         //register(HEADER_COLLABORATION);
         //register(HEADER_VERSION);

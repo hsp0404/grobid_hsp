@@ -478,6 +478,23 @@ public class Engine implements Closeable {
         return fullTextToTEIDoc(inputFile, null, config).getTei();
     }
 
+    public String metaDataToTEI(File inputFile,
+                                String md5Str,
+                                GrobidAnalysisConfig config) throws Exception {
+        return metaDataToTEIDoc(inputFile, md5Str, config).getTei();
+    }
+
+    public Document metaDataToTEIDoc(File inputFile, String md5Str, GrobidAnalysisConfig config) throws Exception {
+        FullTextParser fullTextParser = parsers.getFullTextParser();
+        Document resultDoc;
+        LOGGER.debug("Starting processing fullTextToTEI on " + inputFile);
+        long time = System.currentTimeMillis();
+        resultDoc = fullTextParser.meta(inputFile, md5Str, config);
+        LOGGER.debug("Ending processing fullTextToTEI on " + inputFile + ". Time to process: "
+            + (System.currentTimeMillis() - time) + "ms");
+        return resultDoc;
+    }
+
     /**
      *
      * //TODO: remove invalid JavaDoc once refactoring is done and tested (left for easier reference)
