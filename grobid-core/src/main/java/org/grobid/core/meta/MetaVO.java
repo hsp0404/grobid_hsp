@@ -3,10 +3,7 @@ package org.grobid.core.meta;
 import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
-import org.grobid.core.data.Figure;
-import org.grobid.core.data.Keyword;
-import org.grobid.core.data.Person;
-import org.grobid.core.data.Table;
+import org.grobid.core.data.*;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -16,10 +13,12 @@ public class MetaVO {
     private String title_ko;
     private String abstract_ko;
     private Set<String> authors_ko;
+    private List<Affiliation> affiliation_ko;
     private List<String> keywords_ko;
 
     private String title_en;
     private String abstract_en;
+    private List<Affiliation> affiliation_en;
     private Set<String> authors_en;
     private List<String> keywords_en;
 
@@ -48,6 +47,8 @@ public class MetaVO {
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
         this.keywords_ko = new ArrayList<String>();
         this.keywords_en = new ArrayList<String>();
+        this.affiliation_ko = new ArrayList<>();
+        this.affiliation_en = new ArrayList<>();
         this.authors_ko = new LinkedHashSet<>();
         this.authors_en = new LinkedHashSet<>();
         this.emails = new LinkedHashSet<>();
@@ -140,8 +141,34 @@ public class MetaVO {
         }
     }
 
+    public void setAffiliation(List<Affiliation> affiliations) {
+        for (Affiliation aff : affiliations) {
+            String rawText = aff.getRawAffiliationString();
+            Language lang = detect(rawText);
+            if (lang.name().equals("ENGLISH")) {
+                affiliation_en.add(aff);
+            }else{
+                affiliation_ko.add(aff);
+            }
 
+        }
+    }
 
+    public List<Affiliation> getAffiliation_ko() {
+        return affiliation_ko;
+    }
+
+    public void setAffiliation_ko(List<Affiliation> affiliation_ko) {
+        this.affiliation_ko = affiliation_ko;
+    }
+
+    public List<Affiliation> getAffiliation_en() {
+        return affiliation_en;
+    }
+
+    public void setAffiliation_en(List<Affiliation> affiliation_en) {
+        this.affiliation_en = affiliation_en;
+    }
 
     public String getTitle_ko() {
         return title_ko;

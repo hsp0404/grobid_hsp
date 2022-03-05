@@ -28,6 +28,10 @@ public class CitationTrainer extends AbstractTrainer {
 
     public CitationTrainer() {
         super(GrobidModels.CITATION);
+
+	epsilon = 0.0001;
+	window = 20;
+	nbMaxIterations = 1000;
     }
 
 	/**

@@ -801,9 +801,20 @@ var grobid = (function($) {
 
                             delete response[i].figures;
                             delete response[i].tables;
+                            delete response[i].assetPath;
+
+                            const removeEmptyOrNull = (obj) => {
+                                Object.keys(obj).forEach(k =>
+                                    (obj[k] && typeof obj[k] === 'object') && removeEmptyOrNull(obj[k]) ||
+                                    (!obj[k] && obj[k] !== undefined) && delete obj[k]
+                                );
+                                return obj;
+                            };
+
+                            let res = removeEmptyOrNull(response[i])
 
                             area.style.display = 'none';
-                            $(json_viewer).jsonViewer(response[i]);
+                            $(json_viewer).jsonViewer(res);
                             img_viewer.id = "img_viewer_"+i
                             img_viewer.className = "img_viewer"
 

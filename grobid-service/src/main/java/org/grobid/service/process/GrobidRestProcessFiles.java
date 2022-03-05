@@ -294,6 +294,9 @@ public class GrobidRestProcessFiles {
                 if (doc.getTables() != null) {
                     metaVO.setTables(doc.getTables());
                 }
+                if (result.getFullAffiliations() != null) {
+                    metaVO.setAffiliation(result.getFullAffiliations());
+                }
                 metaVO.setAssetPath(assetPath);
 
                 metaVO.setEmail(result.getEmail());

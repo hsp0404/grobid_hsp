@@ -19,6 +19,9 @@ public class FulltextTrainer extends AbstractTrainer{
 
     public FulltextTrainer() {
         super(GrobidModels.FULLTEXT);
+	epsilon = 0.0001;
+	window = 20;
+	nbMaxIterations = 1000;
     }
 
     @Override
