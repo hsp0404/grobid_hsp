@@ -65,9 +65,20 @@ var grobid = (function($) {
         $('#api_file').change((e) => {
             $('.file-list-li').remove()
             $(e.target.files).each((i, elem) => {
+                let pdf_button = document.createElement("button");
                 let li = document.createElement("li");
                 li.className = "file-list-li"
                 li.innerText = elem.name;
+
+                pdf_button.innerText = "view pdf";
+                pdf_button.id = "pdf"+i;
+                pdf_button.className = "pdf-preview-btn"
+                pdf_button.onclick = (e) => {
+                    e.stopPropagation()
+                    viewPdf(i);
+                }
+
+                $(li).append(pdf_button);
                 $('#file-list').append(li);
             })
         })
@@ -759,15 +770,15 @@ var grobid = (function($) {
                             let img_viewer = document.createElement("div");
                             // let spinner = document.createElement("div");
                             let json_viewer = document.createElement("pre");
-                            let pdf_button = document.createElement("button");
+                            // let pdf_button = document.createElement("button");
 
                             let figures = response[i].figures;
                             let tables = response[i].tables;
                             let assetPath = response[i].assetPath;
 
-                            console.log(figures);
-                            console.log(tables);
-                            console.log(assetPath);
+                            // console.log(figures);
+                            // console.log(tables);
+                            // console.log(assetPath);
 
                             // spinner.className = 'loading'
                             for(let i=0; i<figures.length; i++){
@@ -775,20 +786,24 @@ var grobid = (function($) {
                                 let caption = document.createElement("small");
                                 let image = figures[i].bitmapGraphicObjects;
                                 if(image){
-                                    if(image.length === 1){
-                                        getImage(assetPath + "/" + image[0].uri.split("/")[1], i);
-                                    }else{
-                                        console.log('more than one image')
-                                    }
+                                    getImage(assetPath + "/" + image[0].uri.split("/")[1], i, null);
                                     preview.className = "preview-img";
                                     preview.id = "preview-box-"+i;
                                     caption.className = "preview-caption";
                                     caption.innerText = figures[i].caption.replaceAll("\n", "");
                                     preview.onclick = (e) => {
                                         e.stopPropagation()
-                                        let figureWin = window.open("", "image_popup", "width=" + e.target.naturalWidth + ", height=" + (Number(e.target.naturalHeight) + 40));
+                                        let width = e.target.naturalWidth;
+                                        let height = (Number(e.target.naturalHeight) + 40);
+                                        let figureWin = window.open("", "image_popup", "width=" + width + ", height=" + height);
                                         figureWin.document.write("<html><body style='margin:0'>")
-                                        figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.src + "' border=0></a><br/>");
+                                        figureWin.document.write("<a href=javascript:window.close()>")
+                                        figureWin.document.write("<img src='" + e.target.src + "' border=0></a><br/>");
+                                        if(image.length !== 1){
+                                            for(let x=1; x<image.length; x++){
+                                                getImage(assetPath + "/" + image[x].uri.split("/")[1], i, figureWin);
+                                            }
+                                        }
                                         figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
                                         figureWin.document.write("</body><html>");
                                     }
@@ -875,14 +890,14 @@ var grobid = (function($) {
 
                             }
 
-                            pdf_button.innerText = "view pdf";
-                            pdf_button.id = "pdf"+i;
-                            pdf_button.onclick = (e) => {
-                                e.stopPropagation()
-                                viewPdf(i);
-                            }
+                            // pdf_button.innerText = "view pdf";
+                            // pdf_button.id = "pdf"+i;
+                            // pdf_button.onclick = (e) => {
+                            //     e.stopPropagation()
+                            //     viewPdf(i);
+                            // }
 
-                            area.append(pdf_button);
+                            // area.append(pdf_button);
                             area.append(img_viewer);
                             area.append(json_viewer);
 
@@ -973,7 +988,7 @@ var grobid = (function($) {
         fileReader.readAsArrayBuffer(file);
     }
 
-    function getImage(path, index){
+    function getImage(path, index, win){
         let imageXhr = new XMLHttpRequest();
         let imgUrl = "/api/getImage";
         let form = new FormData();
@@ -983,10 +998,30 @@ var grobid = (function($) {
         imageXhr.onreadystatechange = function() {
             if(imageXhr.readyState == 4) {
                 if (imageXhr.status == 200) {
-                    let img = document.createElement('img');
-                    img.src = window.URL.createObjectURL(new Blob([imageXhr.response]));
-                    img.className = ("body-img");
-                    $("#preview-box-"+index).prepend(img);
+                    if(win){
+                        let width = 0;
+                        let height = window.innerHeight;
+                        let img = document.createElement('img');
+                        img.src = window.URL.createObjectURL(new Blob([imageXhr.response]));
+                        let a = win.document.getElementsByTagName('a')[0];
+                        img.onload = () => {
+                            let children = $(a).children();
+                            for (let img of children) {
+                                if(img.naturalWidth > width){
+                                    win.resizeTo(img.naturalWidth, height+img.naturalHeight);
+                                }else {
+                                    win.resizeTo(width, height + img.naturalHeight);
+                                }
+                            }
+                        }
+                        a.appendChild(img);
+
+                    }else{
+                        let img = document.createElement('img');
+                        img.src = window.URL.createObjectURL(new Blob([imageXhr.response]));
+                        img.className = ("body-img");
+                        $("#preview-box-"+index).prepend(img);
+                    }
                 }
             }
         }

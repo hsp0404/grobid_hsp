@@ -54,6 +54,10 @@ body {
     border: 1px blue solid;
 }
 
+.pdf-preview-btn {
+    margin-left: 20px;
+}
+
 .preview-img {
     width: 200px;
     height: 230px;
