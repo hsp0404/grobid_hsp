@@ -73,7 +73,8 @@
 					<div id="divAbout">
                         <form class="form-horizontal" enctype="multipart/form-data" method="post" id="apiForm" target=_blank accept-charset="UTF-8">
                             <input type="file" name="input" id="api_file" accept="application/pdf" multiple>
-                            <input id="submitRequest4" value="Submit" class="btn btn-success"/>
+<!--                            <input id="submitRequest4" value="Submit" class="btn btn-success"/>-->
+                            <button type="button" id="submitRequest4" class="btn btn-success">Submit</button>
                         </form>
                         <ul id="file-list">
 <!--                            <div id="api_result_area" style="display: none">-->
@@ -333,7 +334,7 @@
 			</div-->
 	
 	    </div>
-        <iframe id="pdfViewer" src="resources/pdf.js/web/viewer.html?file=" style="width: 900px; height: 1200px;display: none;left: 1100px; position: absolute"></iframe>
+        <iframe id="pdfViewer" src="resources/pdf.js/web/viewer.html?file=" style="width: 900px; height: 1200px;display: none;left: 1100px; position: fixed"></iframe>
 		
 <!--		<footer>-->
 <!--		  <p><span style="color:#848484;">&copy; Grobid contributors - 2021 </span></p>-->
