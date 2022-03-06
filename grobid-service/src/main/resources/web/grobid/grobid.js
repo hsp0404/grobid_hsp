@@ -781,16 +781,16 @@ var grobid = (function($) {
                             // console.log(assetPath);
 
                             // spinner.className = 'loading'
-                            for(let i=0; i<figures.length; i++){
+                            for(let j=0; j<figures.length; j++){
                                 let preview = document.createElement("div");
                                 let caption = document.createElement("small");
-                                let image = figures[i].bitmapGraphicObjects;
+                                let image = figures[j].bitmapGraphicObjects;
                                 if(image){
-                                    getImage(assetPath + "/" + image[0].uri.split("/")[1], i, null);
+                                    getImage(assetPath + "/" + image[0].uri.split("/")[1], i, j, null);
                                     preview.className = "preview-img";
-                                    preview.id = "preview-box-"+i;
+                                    preview.id = i+"-preview-box-"+j;
                                     caption.className = "preview-caption";
-                                    caption.innerText = figures[i].caption.replaceAll("\n", "");
+                                    caption.innerText = figures[j].caption.replaceAll("\n", "");
                                     preview.onclick = (e) => {
                                         e.stopPropagation()
                                         let width = e.target.naturalWidth;
@@ -801,7 +801,7 @@ var grobid = (function($) {
                                         figureWin.document.write("<img src='" + e.target.src + "' border=0></a><br/>");
                                         if(image.length !== 1){
                                             for(let x=1; x<image.length; x++){
-                                                getImage(assetPath + "/" + image[x].uri.split("/")[1], i, figureWin);
+                                                getImage(assetPath + "/" + image[x].uri.split("/")[1], i, j, figureWin);
                                             }
                                         }
                                         figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
@@ -861,9 +861,9 @@ var grobid = (function($) {
                                                         // pageImage.src = canvas.toDataURL('image/png');
                                                         let resultCanvas = document.createElement('canvas');
                                                         let resultContext = resultCanvas.getContext('2d');
-                                                        resultCanvas.width = (textArea[j].width*2)+10;
-                                                        resultCanvas.height = (textArea[j].height*2)+10;
-                                                        resultContext.drawImage(canvas, textArea[j].x*2, textArea[j].y*2, textArea[j].width*2, textArea[j].height*2, 0,0, (textArea[j].width*2)+10, (textArea[j].height*2)+10);
+                                                        resultCanvas.width = (textArea[j].width*2)+35;
+                                                        resultCanvas.height = (textArea[j].height*2)+35;
+                                                        resultContext.drawImage(canvas, ((textArea[j].x*2)-10), ((textArea[j].y*2)-10), ((textArea[j].width*2)+25), ((textArea[j].height*2)+25), 0,0, (textArea[j].width*2)+35, (textArea[j].height*2)+35);
                                                         resultCanvas.className = "body-img";
                                                         preview.append(resultCanvas);
                                                         preview.append(header);
@@ -988,7 +988,7 @@ var grobid = (function($) {
         fileReader.readAsArrayBuffer(file);
     }
 
-    function getImage(path, index, win){
+    function getImage(path, pdfIndex, index, win){
         let imageXhr = new XMLHttpRequest();
         let imgUrl = "/api/getImage";
         let form = new FormData();
@@ -1020,7 +1020,7 @@ var grobid = (function($) {
                         let img = document.createElement('img');
                         img.src = window.URL.createObjectURL(new Blob([imageXhr.response]));
                         img.className = ("body-img");
-                        $("#preview-box-"+index).prepend(img);
+                        $("#"+pdfIndex+"-preview-box-"+index).prepend(img);
                     }
                 }
             }
