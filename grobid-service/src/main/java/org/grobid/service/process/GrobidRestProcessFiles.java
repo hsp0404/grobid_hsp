@@ -264,10 +264,10 @@ public class GrobidRestProcessFiles {
 
                 MetaVO metaVO = new MetaVO();
                 if(result.getTitle() != null){
-                    metaVO.setTitle(result.getTitle());
+                    metaVO.setTitle_ko(result.getTitle());
                 }
                 if(result.getEnglishTitle() != null){
-                    metaVO.setTitle(result.getEnglishTitle());
+                    metaVO.setTitle_en(result.getEnglishTitle());
                 }
                 if(result.getAbstract() != null){
                     metaVO.setAbstract(result.getAbstract());
