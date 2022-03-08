@@ -969,6 +969,9 @@ public class HeaderParser extends AbstractParser {
                 if (clusterContent.contains("(") && clusterContent.contains(")")) {
                     clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", "");
                 }
+                if (clusterNonDehypenizedContent.contains("\n\n")){
+                    clusterContent = clusterNonDehypenizedContent.replaceAll("\n\n", ", ");
+                }
                 if (biblio.getKeyword() != null) {
                     biblio.setKeyword(biblio.getKeyword() + ", " + clusterContent);
                 } else {
