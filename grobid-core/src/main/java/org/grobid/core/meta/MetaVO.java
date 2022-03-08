@@ -11,16 +11,19 @@ import java.util.regex.Pattern;
 
 public class MetaVO {
     private String title_ko;
-    private String abstract_ko;
-    private Set<String> authors_ko;
-    private List<Affiliation> affiliation_ko;
-    private List<String> keywords_ko;
-
     private String title_en;
+
+    private String abstract_ko;
     private String abstract_en;
-    private List<Affiliation> affiliation_en;
+
+    private Set<String> authors_ko;
     private Set<String> authors_en;
-    private List<String> keywords_en;
+
+    private List<Affiliation> affiliation_ko;
+    private List<Affiliation> affiliation_en;
+
+    private Set<String> keywords_ko;
+    private Set<String> keywords_en;
 
     private Set<String> emails;
     private String submission;
@@ -45,8 +48,8 @@ public class MetaVO {
 
     public MetaVO() {
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
-        this.keywords_ko = new ArrayList<String>();
-        this.keywords_en = new ArrayList<String>();
+        this.keywords_ko = new LinkedHashSet<>();
+        this.keywords_en = new LinkedHashSet<>();
         this.affiliation_ko = new ArrayList<>();
         this.affiliation_en = new ArrayList<>();
         this.authors_ko = new LinkedHashSet<>();
@@ -99,20 +102,34 @@ public class MetaVO {
         for (Keyword keyword : keywords) {
             String k = keyword.getKeyword().trim();
 
-            if (k == null || k.equals("") || k.equals(" ")) {
+            if (k == null || k.equals("") || k.equals(" ") || k.equals(",") || k.equals("|") || k.equals(",,")) {
                 continue;
             }
-
-            Language lang = detect(k);
-            if (lang.name().equals("ENGLISH")) {
-                if(this.keywords_en.contains(k)){
-                    this.keywords_ko.add(k);
-                }else{
-                    this.keywords_en.add(k);
+            if(k.contains("|")){
+                String[] split = k.split("\\|");
+                for (String s : split) {
+                    if (s == null || s.equals("") || s.equals(" ")) {
+                        continue;
+                    }
+                    setKeywordLanguageDetector(s);
                 }
             }else{
-                this.keywords_ko.add(k);
+                setKeywordLanguageDetector(k);
             }
+
+        }
+    }
+
+    private void setKeywordLanguageDetector(String k) {
+        Language lang = detect(k);
+        if (lang.name().equals("ENGLISH")) {
+            if(this.keywords_en.contains(k)){
+                this.keywords_ko.add(k);
+            }else{
+                this.keywords_en.add(k);
+            }
+        }else{
+            this.keywords_ko.add(k);
         }
     }
 
@@ -194,11 +211,11 @@ public class MetaVO {
         this.authors_ko = authors_ko;
     }
 
-    public List<String> getKeywords_ko() {
+    public Set<String> getKeywords_ko() {
         return keywords_ko;
     }
 
-    public void setKeywords_ko(List<String> keywords_ko) {
+    public void setKeywords_ko(Set<String> keywords_ko) {
         this.keywords_ko = keywords_ko;
     }
 
@@ -226,11 +243,11 @@ public class MetaVO {
         this.authors_en = authors_en;
     }
 
-    public List<String> getKeywords_en() {
+    public Set<String> getKeywords_en() {
         return keywords_en;
     }
 
-    public void setKeywords_en(List<String> keywords_en) {
+    public void setKeywords_en(Set<String> keywords_en) {
         this.keywords_en = keywords_en;
     }
 

@@ -820,6 +820,7 @@ var grobid = (function($) {
 
                             const removeEmptyOrNull = (obj) => {
                                 Object.keys(obj).forEach(k =>
+                                    (obj[k] && obj[k].length === 0) && delete obj[k] ||
                                     (obj[k] && typeof obj[k] === 'object') && removeEmptyOrNull(obj[k]) ||
                                     (!obj[k] && obj[k] !== undefined) && delete obj[k]
                                 );
