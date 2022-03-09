@@ -1258,7 +1258,7 @@ public class Document implements Serializable {
                     || norm.startsWith("gambar") || norm.startsWith("quadro")
                     || norm.startsWith("wykres")
                     || norm.startsWith("fuente")
-                    ) {
+                    || norm.startsWith("<그림") || norm.startsWith("그림")) {
                 result.addAll(figBlock.getTokens());
 
                 while (it.hasNext()) {

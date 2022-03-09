@@ -771,9 +771,15 @@ var grobid = (function($) {
                             // let spinner = document.createElement("div");
                             let json_viewer = document.createElement("pre");
                             // let pdf_button = document.createElement("button");
-
-                            let figures = response[i].figures;
-                            let tables = response[i].tables;
+                            
+                            let figures = [];
+                            let tables = [];
+                            if(response[i].figures){
+                                figures = response[i].figures;
+                            }
+                            if(response[i].tables){
+                                tables = response[i].tables;
+                            }
                             let assetPath = response[i].assetPath;
 
                             // console.log(figures);
@@ -782,34 +788,19 @@ var grobid = (function($) {
 
                             // spinner.className = 'loading'
                             for(let j=0; j<figures.length; j++){
-                                let preview = document.createElement("div");
-                                let caption = document.createElement("small");
-                                let image = figures[j].bitmapGraphicObjects;
-                                if(image){
-                                    getImage(assetPath + "/" + image[0].uri.split("/")[1], i, j, null);
-                                    preview.className = "preview-img";
-                                    preview.id = i+"-preview-box-"+j;
-                                    caption.className = "preview-caption";
-                                    caption.innerText = figures[j].caption.replaceAll("\n", "");
-                                    preview.onclick = (e) => {
-                                        e.stopPropagation()
-                                        let width = e.target.naturalWidth;
-                                        let height = (Number(e.target.naturalHeight) + 40);
-                                        let figureWin = window.open("", "image_popup", "width=" + width + ", height=" + height);
-                                        figureWin.document.write("<html><body style='margin:0'>")
-                                        figureWin.document.write("<a href=javascript:window.close()>")
-                                        figureWin.document.write("<img src='" + e.target.src + "' border=0></a><br/>");
-                                        if(image.length !== 1){
-                                            for(let x=1; x<image.length; x++){
-                                                getImage(assetPath + "/" + image[x].uri.split("/")[1], i, j, figureWin);
-                                            }
-                                        }
-                                        figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
-                                        figureWin.document.write("</body><html>");
-                                    }
-
-                                    preview.append(caption);
+                                console.log(figures[j])
+                                let preview;
+                                if(figures[j].bitmapGraphicObjects){
+                                    preview = getImageNew(figures[j], j, i, assetPath, true);
+                                }else if(figures[j].vectorBoxGraphicObjects){
+                                    console.log("vector!!");
+                                }
+                                
+                                
+                                if(preview){
                                     img_viewer.append(preview);
+                                }else{
+                                    console.log(figures[j])
                                 }
                             }
                             let file = document.getElementById("api_file").files[i];
@@ -835,59 +826,11 @@ var grobid = (function($) {
                             img_viewer.className = "img_viewer"
 
                             for(let k=0; k<tables.length; k++){
-
-                                let preview = document.createElement("div");
-                                let caption = document.createElement("small");
-                                let header = document.createElement("small");
-                                caption.className = "preview-caption";
-                                caption.innerText = tables[k].caption;
-                                header.className = "preview-caption";
-                                header.innerText = tables[k].header;
-                                let textArea = tables[k].textArea
-                                for(let j=0; j<textArea.length; j++){
-                                    let fileReader = new FileReader();
-                                    fileReader.onload =(ev) => {
-                                        PDFJS.getDocument(fileReader.result).then((pdf) => {
-                                            pdf.getPage(textArea[j].page)
-                                                .then((page) => {
-                                                    let scale = 2;
-                                                    let viewport = page.getViewport(scale);
-                                                    let canvas = document.createElement('canvas');
-                                                    let context = canvas.getContext("2d");
-                                                    canvas.height = viewport.height;
-                                                    canvas.width = viewport.width;
-                                                    let task = page.render({canvasContext: context, viewport: viewport})
-                                                    task.promise.then(() => {
-                                                        // let pageImage = new Image();
-                                                        // pageImage.src = canvas.toDataURL('image/png');
-                                                        let resultCanvas = document.createElement('canvas');
-                                                        let resultContext = resultCanvas.getContext('2d');
-                                                        resultCanvas.width = (textArea[j].width*2)+35;
-                                                        resultCanvas.height = (textArea[j].height*2)+35;
-                                                        resultContext.drawImage(canvas, ((textArea[j].x*2)-10), ((textArea[j].y*2)-10), ((textArea[j].width*2)+25), ((textArea[j].height*2)+25), 0,0, (textArea[j].width*2)+35, (textArea[j].height*2)+35);
-                                                        resultCanvas.className = "body-img";
-                                                        preview.append(resultCanvas);
-                                                        preview.append(header);
-                                                    })
-
-                                                })
-                                        })
-                                    }
-                                    fileReader.readAsArrayBuffer(file);
-
+                                let preview;
+                                preview = capture(tables[k], file, false);
+                                if(preview){
+                                    img_viewer.append(preview);
                                 }
-
-                                preview.className = 'preview-img';
-                                preview.onclick = (e) => {
-                                    e.stopPropagation()
-                                    let figureWin = window.open("", "image_popup", "width=" + e.target.width + ", height=" + (Number(e.target.height) + 120));
-                                    figureWin.document.write("<html><body style='margin:0'>")
-                                    figureWin.document.write("<small style='font-size: 25px'>header : "+ header.innerText + "</small><br/>")
-                                    figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.toDataURL('image/png') + "' border=0></a><br/>");
-                                    figureWin.document.write("<small style='font-size: 25px'>caption : "+ caption.innerText + "</small>")
-                                    figureWin.document.write("</body><html>");
-                                }
-                                img_viewer.append(preview);
 
                             }
 
@@ -948,6 +891,92 @@ var grobid = (function($) {
             xhr.send(formData);
         }else{
             alert('no file!');
+        }
+    }
+    
+    function capture(object, file, isFig){
+        let preview = document.createElement("div");
+        let caption = document.createElement("small");
+        let header = document.createElement("small");
+        caption.className = "preview-caption";
+        caption.innerText = object.caption;
+        header.className = "preview-caption";
+        header.innerText = object.header;
+        let textArea = object.textArea
+        for(let j=0; j<textArea.length; j++){
+            let fileReader = new FileReader();
+            fileReader.onload =(ev) => {
+                PDFJS.getDocument(fileReader.result).then((pdf) => {
+                    pdf.getPage(object.page)
+                        .then((page) => {
+                            let scale = 2;
+                            let viewport = page.getViewport(scale);
+                            let canvas = document.createElement('canvas');
+                            let context = canvas.getContext("2d");
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            let task = page.render({canvasContext: context, viewport: viewport})
+                            task.promise.then(() => {
+                                let resultCanvas = document.createElement('canvas');
+                                let resultContext = resultCanvas.getContext('2d');
+                                resultCanvas.width = (textArea[j].width*2)+35;
+                                resultCanvas.height = (textArea[j].height*2)+35;
+                                resultContext.drawImage(canvas, ((textArea[j].x*2)-10), ((textArea[j].y*2)-10), ((textArea[j].width*2)+25), ((textArea[j].height*2)+25), 0,0, (textArea[j].width*2)+35, (textArea[j].height*2)+35);
+                                resultCanvas.className = "body-img";
+                                preview.append(resultCanvas);
+                                preview.append(header);
+                            })
+
+                        })
+                })
+            }
+            fileReader.readAsArrayBuffer(file);
+
+        }
+
+        preview.className = 'preview-img';
+        preview.onclick = (e) => {
+            e.stopPropagation()
+            let figureWin = window.open("", "image_popup", "width=" + e.target.width + ", height=" + (Number(e.target.height) + 120));
+            figureWin.document.write("<html><body style='margin:0'>")
+            figureWin.document.write("<small style='font-size: 25px'>header : "+ header.innerText + "</small><br/>")
+            figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.toDataURL('image/png') + "' border=0></a><br/>");
+            figureWin.document.write("<small style='font-size: 25px'>caption : "+ caption.innerText + "</small>")
+            figureWin.document.write("</body><html>");
+        }
+        return preview;
+    }
+    
+    function getImageNew(object, objectIndex, index, assetPath, isFig){
+        let preview = document.createElement("div");
+        let caption = document.createElement("small");
+        let image = object.bitmapGraphicObjects;
+        if(image){
+            getImage(assetPath + "/" + image[0].uri.split("/")[1], index, objectIndex, null);
+            preview.className = "preview-img";
+            preview.id = index+"-preview-box-"+objectIndex;
+            caption.className = "preview-caption";
+            caption.innerText = object.caption.replaceAll("\n", "");
+            preview.onclick = (e) => {
+                e.stopPropagation()
+                let width = e.target.naturalWidth;
+                let height = (Number(e.target.naturalHeight) + 40);
+                let figureWin = window.open("", "image_popup", "width=" + width + ", height=" + height);
+                figureWin.document.write("<html><body style='margin:0'>")
+                figureWin.document.write("<a href=javascript:window.close()>")
+                figureWin.document.write("<img src='" + e.target.src + "' border=0></a><br/>");
+                if(image.length !== 1){
+                    for(let x=1; x<image.length; x++){
+                        getImage(assetPath + "/" + image[x].uri.split("/")[1], index, objectIndex, figureWin);
+                    }
+                }
+                figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
+                figureWin.document.write("</body><html>");
+            }
+
+            preview.append(caption);
+            // img_viewer.append(preview);
+            return preview
         }
     }
 
@@ -1029,28 +1058,8 @@ var grobid = (function($) {
         imageXhr.send(form);
     }
 
-    function getTableImage(areaArray, pdfFile, index){
-        let tableXhr = new XMLHttpRequest();
-        let tableUrl = "/api/getTableImage";
-        let form = new FormData();
-        // for (let key in areaArray) {
-        //     form.append(key, areaArray[key])
-        // }
-        form.append("areaArray", areaArray)
-        form.append("input", pdfFile);
-        tableXhr.responseType = "arraybuffer";
-        tableXhr.open("POST", tableUrl, true);
-        tableXhr.onreadystatechange = function() {
-            if(tableXhr.readyState == 4) {
-                if (tableXhr.status == 200) {
-                    let img = document.createElement('img');
-                    img.src = window.URL.createObjectURL(new Blob([tableXhr.response]));
-                    img.className = ("body-img");
-                    $("#preview-table-box-"+index).prepend(img);
-                }
-            }
-        }
-        tableXhr.send(form);
+    function getTableImage(areaArray, pdfFile, index, isFig){
+        
 
     }
 

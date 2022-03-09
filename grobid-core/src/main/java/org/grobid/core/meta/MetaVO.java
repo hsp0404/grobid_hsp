@@ -76,12 +76,13 @@ public class MetaVO {
                 }
             }
         }else{
-            Language lang = detect(title);
-            if (lang.name().equals("ENGLISH")){
-                this.title_en = title;
-            }else{
-                this.title_ko = title;
-            }
+//            Language lang = detect(title);
+//            if (lang.name().equals("ENGLISH")){
+//                this.title_en = title;
+//            }else{
+//                this.title_ko = title;
+//            }
+            this.title_ko = title;
         }
     }
 
