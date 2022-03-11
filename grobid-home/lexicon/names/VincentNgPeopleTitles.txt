@@ -178,7 +178,7 @@ Decemvir
 Dictator 
 Doge 
 Duce 
-Führer 
+F?rer 
 Imperator 
 Lord Protector 
 President 
@@ -276,7 +276,7 @@ Reichsgraf
 Rheingraf 
 Vizegraf 
 Wildgraf 
-Gräfin 
+Gr?in 
 Gentleman 
 Gentleman at Arms 
 Gentleman of the Bedchamber 
@@ -285,7 +285,7 @@ Gentlewoman
 Lady 
 Hidalgo 
 Don 
-Doña 
+Do? 
 Sahib 
 Abbess 
 Abbot 
@@ -301,7 +301,7 @@ Agister
 Almoner 
 Lord High Almoner 
 Ambassador 
-Attaché 
+Attach?
 Awoamefia 
 Bishop 
 Archbishop 
@@ -319,7 +319,7 @@ Lord Chancellor
 Vice-Chancellor 
 Vice Chancellor 
 Chaplain 
-Chargé d'affaires 
+Charg?d'affaires 
 Cock o ' the North 
 Commander 
 Commander-in-Chief 
@@ -759,3 +759,7 @@ Grandfather
 Grandmother 
 Pundit 
 Sir
+±³¼ö
+Á¶±³¼ö
+¹Ú»ç
+¼®»ç
