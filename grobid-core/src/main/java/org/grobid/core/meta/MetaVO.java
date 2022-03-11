@@ -56,7 +56,6 @@ public class MetaVO {
         this.authors_en = new LinkedHashSet<>();
         this.emails = new LinkedHashSet<>();
         this.koreanNamePattern = Pattern.compile("[가-힣]\\s?[가-힣]\\s?[가-힣]?[가-힣]?");
-//        this.englishNamePattern = Pattern.compile("[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*){1,2}");
         this.englishNamePattern = Pattern.compile("[a-zA-Z]+([',. -][a-zA-Z ])?(['. -]?[a-zA-Z ]+)+");
     }
 
