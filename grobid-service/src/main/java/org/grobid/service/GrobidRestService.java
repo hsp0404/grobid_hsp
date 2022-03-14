@@ -673,19 +673,19 @@ public class GrobidRestService implements GrobidPaths {
             .build();
         citations = Arrays.asList(citations.get(0).split("\n"));
 
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection("jdbc:mysql://49.247.25.49:33306/article_db", "argonet", "argonet1436");
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("select * from unpaywall_article ua where id = '23'");
-            while (rs.next()) {
-                System.out.println(rs.getString("title"));
-            }
-            System.out.println("db connect");
-            conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+//        Connection conn = null;
+//        try {
+//            conn = DriverManager.getConnection("jdbc:mysql://49.247.25.49:33306/article_db", "argonet", "argonet1436");
+//            Statement stmt = conn.createStatement();
+//            ResultSet rs = stmt.executeQuery("select * from unpaywall_article ua where id = '23'");
+//            while (rs.next()) {
+//                System.out.println(rs.getString("title"));
+//            }
+//            System.out.println("db connect");
+//            conn.close();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
 
 
         return restProcessString.processCitationList(citations, config, ExpectedResponseType.XML);
