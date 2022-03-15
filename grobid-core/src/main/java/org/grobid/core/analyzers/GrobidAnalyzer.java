@@ -90,7 +90,6 @@ public class GrobidAnalyzer implements Analyzer {
 			}
 			else if (lang.isKorean()) {
 				// Korean analyser
-				LOGGER.info("Korean detected!!");
 				if (krAnalyzer == null)
 					krAnalyzer = ReTokenizerFactory.create("kr_g");
 				result = krAnalyzer.tokensAsList(text);
