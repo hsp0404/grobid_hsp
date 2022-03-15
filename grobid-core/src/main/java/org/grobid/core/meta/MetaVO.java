@@ -3,11 +3,16 @@ package org.grobid.core.meta;
 import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
+import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import org.apache.commons.lang3.StringUtils;
 import org.grobid.core.data.*;
+import scala.Option;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class MetaVO {
     private String title_ko;
@@ -133,19 +138,45 @@ public class MetaVO {
         }
     }
 
-    public void setAuthor(String authors){
-        authors = authors.replace("and", "");
-        authors = authors.replace("And", "");
-        authors = authors.replace("by", "");
-        authors = authors.replace("By", "");
-
-        Matcher enMatcher = englishNamePattern.matcher(authors);
-        Matcher koMatcher = koreanNamePattern.matcher(authors);
-        while(enMatcher.find()){
-            this.authors_en.add(enMatcher.group().trim());
+    public void setAuthor(List<Person> authors){
+//        authors = authors.replace("and", "");
+//        authors = authors.replace("And", "");
+//        authors = authors.replace("by", "");
+//        authors = authors.replace("By", "");
+//
+//        Matcher enMatcher = englishNamePattern.matcher(authors);
+//        Matcher koMatcher = koreanNamePattern.matcher(authors);
+//        while(enMatcher.find()){
+//            this.authors_en.add(enMatcher.group().trim());
+//        }
+//        while(koMatcher.find()){
+//            this.authors_ko.add(koMatcher.group().replaceAll(" ", "").trim());
+//        }
+        HashMap<Integer, String> indexKorName = new HashMap<>();
+        for (int i = 0; i < authors.size(); i++) {
+            if(authors.get(i).getLang().equals("kr")){
+                StringBuilder sb = new StringBuilder();
+                sb.append(authors.get(i).getFirstName());
+                sb.append(authors.get(i).getLastName());
+                String engName = Kor2EngName(sb.toString());
+                indexKorName.put(i, engName);
+            }
         }
-        while(koMatcher.find()){
-            this.authors_ko.add(koMatcher.group().replaceAll(" ", "").trim());
+
+        for (Person author : authors) {
+            if (author.getLang().equals("en")) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(author.getFirstName().toLowerCase().replaceAll("-", " "));
+                sb.append(" ");
+                sb.append(author.getLastName().toLowerCase().replaceAll("-", " "));
+                for (Map.Entry<Integer, String> integerStringEntry : indexKorName.entrySet()) {
+                    if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.9) {
+                        // todo : 같은 저자라고 인식! 그 후에 어떻게?
+                        System.out.println("dd");
+                    }
+
+                }
+            }
         }
     }
 
@@ -321,5 +352,93 @@ public class MetaVO {
 
     public void setAssetPath(String assetPath) {
         this.assetPath = assetPath;
+    }
+
+    public static String Kor2EngName(String name){
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] chars = name.toCharArray();
+        for (char aChar : chars) {
+            stringBuilder.append(getENGFirstElement(aChar));
+            stringBuilder.append(getENGMiddleElement(aChar));
+            stringBuilder.append(getENGLastElement(aChar));
+            stringBuilder.append(" ");
+        }
+        return stringBuilder.deleteCharAt(stringBuilder.length() - 1).toString();
+    }
+
+    /* 초성, 중성, 종성 */
+    private static final char[] firstSounds = {'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'};
+    private static final char[] middleSounds = {'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'};
+    private static final char[] lastSounds = {' ', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'};
+
+    /* 초성, 중성, 종성 에 대한 영어 매핑 */
+    private static final String[] efirstSounds = {"k", "kk", "n", "d", "dd", "r", "m", "p", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"};
+    private static final String[] emiddleSounds = {"ar", "ae", "ya", "ye", "u", "ae", "ye", "ye", "o", "wha", "whe", "whe", "yo", "wo", "wo", "whe", "we", "yu", "ue", "ae", "i"};
+    private static final String[] elastSounds = {"", "k", "uk", "None", "n", "n", "n", "None", "l", "l", "None", "None", "None", "None", "None", "None", "m", "b", "p", "s", "ss", "ng", "t", "c", "c", "t", "p", "h"};
+    /* 여기서 영어매핑 알파벳단어가 잘 안맞다면 적절히 바꿔서 사용하세요 */
+
+
+
+    /* 한글 초성에 대한 영어 알파벳 반환 */
+    public static String getENGFirstElement(char c) {
+        return efirstSounds[(c - 0xAC00) / (21 * 28)];
+    }
+    public static String getENGFirstElement(String str) {
+        if (str == null) return "\u0000";
+
+        str = str.trim();
+        int len = str.length();
+        if (len == 0) return "\u0000";
+
+        return getENGFirstElement(str.charAt(0));
+    }
+    /* 한글중성에 대한 영어 알파벳 반환 */
+    public static String getENGMiddleElement(char c) {
+        return emiddleSounds[((c-0xAC00) % (21 * 28)) / 28];
+    }
+    public static String getENGMiddleElement(String str) {
+        if (str == null) return "\u0000";
+
+        str = str.trim();
+        int len = str.length();
+        if (len == 0) return "\u0000";
+
+        return getENGMiddleElement(str.charAt(0));
+    }
+    /* 한글 종성에 대한 영어 알파벳 반환 */
+    public static String getENGLastElement(char c) {
+        return elastSounds[(c - 0xAC00) % 28];
+    }
+    public static String getENGLastElement(String str) {
+        if (str == null) return "\u0000";
+
+        str = str.trim();
+        int len = str.length();
+        if (len == 0) return "\u0000";
+
+        return getENGLastElement(str.charAt(0));
+    }
+
+    private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
+        if ( StringUtils.isBlank(string1) || StringUtils.isBlank(string2) )
+            return 0.0;
+        Double similarity = 0.0;
+        if (!caseDependent) {
+            string1 = string1.toLowerCase();
+            string2 = string2.toLowerCase();
+        }
+        if (string1.equals(string2)) {
+            similarity = 1.0;
+        }
+
+        if ( isNotEmpty(string1) && isNotEmpty(string2) ) {
+            Option<Object> similarityObject =
+                RatcliffObershelpMetric.compare(string1, string2);
+            if (similarityObject.isDefined()) {
+                similarity = (Double) similarityObject.get();
+            }
+        }
+
+        return similarity;
     }
 }

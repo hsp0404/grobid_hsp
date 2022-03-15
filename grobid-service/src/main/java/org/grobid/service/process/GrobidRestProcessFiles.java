@@ -272,8 +272,8 @@ public class GrobidRestProcessFiles {
                 if(result.getAbstract() != null){
                     metaVO.setAbstract(result.getAbstract());
                 }
-                if(result.getOriginalAuthors() != null){
-                    metaVO.setAuthor(result.getOriginalAuthors());
+                if(result.getFullAuthors() != null || result.getFullAuthors().size() != 0){
+                    metaVO.setAuthor(result.getFullAuthors());
                 }
                 if(result.getKeywords() != null){
                     metaVO.setKeyword(result.getKeywords());

@@ -28,6 +28,7 @@ public class Person {
     private String rawName = null; // raw full name if relevant/available, e.g. name exactly as displayed
     private String orcid = null;
     private boolean corresp = false;
+    private String lang = null;
 
     private List<LayoutToken> layoutTokens = new ArrayList<>();
     private List<String> affiliationBlocks = null;
@@ -43,6 +44,11 @@ public class Person {
 
     public void setFirstName(String f) {
         firstName = f;
+        if (f.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+            lang = "kr";
+        } else {
+            lang = "en";
+        }
     }
 
     public String getMiddleName() {
@@ -59,6 +65,11 @@ public class Person {
 
     public void setLastName(String f) {
         lastName = f;
+        if (f.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+            lang = "kr";
+        } else{
+            lang = "en";
+        }
     }
 
     public String getRawName() {
@@ -773,4 +784,11 @@ public class Person {
         return result;
     }
 
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
 }
