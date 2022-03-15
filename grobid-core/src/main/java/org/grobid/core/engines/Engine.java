@@ -196,10 +196,13 @@ public class Engine implements Closeable {
                     BiblioItem resCitation = bibDataSetResults.get(i).getResBib();
                     BiblioItem bibo = resConsolidation.get(Integer.valueOf(i));
                     if (bibo != null) {
-                        if (consolidate == 1)
+                        if (consolidate == 1){
                             BiblioItem.correct(resCitation, bibo);
-                        else if (consolidate == 2)
+                            resCitation.setConsolidated(true);
+
+                        } else if (consolidate == 2){
                             BiblioItem.injectIdentifiers(resCitation, bibo);
+                        }
                     }
                     finalResults.add(resCitation);
                 }

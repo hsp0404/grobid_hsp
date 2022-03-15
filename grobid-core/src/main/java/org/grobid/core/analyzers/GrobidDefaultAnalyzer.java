@@ -18,6 +18,7 @@
 package org.grobid.core.analyzers;
 
 import org.grobid.core.layout.LayoutToken;
+import org.grobid.core.lexicon.Lexicon;
 import org.grobid.core.utilities.TextUtilities;
 import org.grobid.core.utilities.UnicodeUtil;
 import org.grobid.core.lang.Language;
@@ -74,8 +75,28 @@ public class GrobidDefaultAnalyzer implements Analyzer {
         List<String> result = new ArrayList<>();
         text = UnicodeUtil.normaliseText(text);
         StringTokenizer st = new StringTokenizer(text, delimiters, true);
+        Lexicon lexicon = Lexicon.getInstance();
         while (st.hasMoreTokens()) {
-            result.add(st.nextToken());
+            String tok = st.nextToken();
+            if(tok.length() == 3){
+                if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
+                    result.add(tok.substring(0, 1));
+                    result.add(" ");
+                    result.add(tok.substring(1));
+                } else {
+                    result.add(tok);
+                }
+            } else if (tok.length() == 4) {
+                if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
+                    result.add(tok.substring(0, 2));
+                    result.add(" ");
+                    result.add(tok.substring(2));
+                } else {
+                    result.add(tok);
+                }
+            } else {
+                result.add(tok);
+            }
         }
         return result;
     }

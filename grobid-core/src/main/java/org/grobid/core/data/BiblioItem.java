@@ -366,6 +366,7 @@ public class BiblioItem {
 
     private String workingGroup = null;
     private String rawMeeting = null;
+    private boolean isConsolidated = false;
 
     public static final List<String> confPrefixes = Arrays.asList("Proceedings of", "proceedings of",
             "In Proceedings of the", "In: Proceeding of", "In Proceedings, ", "In Proceedings of",
@@ -1331,6 +1332,14 @@ public class BiblioItem {
                 setDOI(doiMatcher.group());
             }
         } 
+    }
+
+    public boolean isConsolidated() {
+        return isConsolidated;
+    }
+
+    public void setConsolidated(boolean consolidated) {
+        isConsolidated = consolidated;
     }
 
     public void setCollaboration(String collab) {
@@ -3079,6 +3088,8 @@ public class BiblioItem {
                 tei.append("<note type=\"raw_reference\">" + localReference + "</note>\n");
             }
 
+            tei.append("<isConsolidated>" + isConsolidated + "</isConsolidated>");
+
             for (int i = 0; i < indent; i++) {
                 tei.append("\t");
             }
@@ -3529,7 +3540,7 @@ public class BiblioItem {
                 autRank = 0;
                 for (Person author : auts) {
                     if (author.getLastName() != null) {
-                        if (author.getLastName().length() < 2)
+                        if (author.getLastName().length() < 1)
                             continue;
                     }
 
