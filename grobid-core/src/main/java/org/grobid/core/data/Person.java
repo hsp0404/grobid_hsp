@@ -29,6 +29,7 @@ public class Person {
     private String orcid = null;
     private boolean corresp = false;
     private String lang = null;
+    private int order = -1;
 
     private List<LayoutToken> layoutTokens = new ArrayList<>();
     private List<String> affiliationBlocks = null;
@@ -790,5 +791,13 @@ public class Person {
 
     public void setLang(String lang) {
         this.lang = lang;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
     }
 }

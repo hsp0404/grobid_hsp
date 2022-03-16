@@ -4,8 +4,11 @@ import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import org.apache.commons.codec.EncoderException;
+import org.apache.commons.codec.language.Soundex;
 import org.apache.commons.lang3.StringUtils;
 import org.grobid.core.data.*;
+import org.grobid.core.utilities.TextUtilities;
 import scala.Option;
 
 import java.util.*;
@@ -138,7 +141,7 @@ public class MetaVO {
         }
     }
 
-    public void setAuthor(List<Person> authors){
+    public void setAuthor(List<Person> authors) throws EncoderException {
 //        authors = authors.replace("and", "");
 //        authors = authors.replace("And", "");
 //        authors = authors.replace("by", "");
@@ -156,25 +159,35 @@ public class MetaVO {
         for (int i = 0; i < authors.size(); i++) {
             if(authors.get(i).getLang().equals("kr")){
                 StringBuilder sb = new StringBuilder();
-                sb.append(authors.get(i).getFirstName());
-                sb.append(authors.get(i).getLastName());
+                sb.append(authors.get(i).getFirstName() == null ? "" : authors.get(i).getFirstName());
+                sb.append(authors.get(i).getLastName() == null ? "" : authors.get(i).getLastName());
                 String engName = Kor2EngName(sb.toString());
                 indexKorName.put(i, engName);
             }
         }
 
+        int n = 0;
+        Soundex soundex = new Soundex();
         for (Person author : authors) {
             if (author.getLang().equals("en")) {
+                n++;
+                author.setOrder(n);
                 StringBuilder sb = new StringBuilder();
-                sb.append(author.getFirstName().toLowerCase().replaceAll("-", " "));
+                String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase();
+                String lastName = author.getLastName() == null ? "" : author.getLastName().toLowerCase();
+                sb.append(firstName.replaceAll("-", " "));
                 sb.append(" ");
-                sb.append(author.getLastName().toLowerCase().replaceAll("-", " "));
+                sb.append(lastName.replaceAll("-", " "));
                 for (Map.Entry<Integer, String> integerStringEntry : indexKorName.entrySet()) {
-                    if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.9) {
-                        // todo : 같은 저자라고 인식! 그 후에 어떻게?
-                        System.out.println("dd");
+                    if(soundex.difference(sb.toString(), integerStringEntry.getValue()) >= 3){
+                        if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.7) {
+                            authors.get(integerStringEntry.getKey()).setOrder(n);
+                        }
+                    }else{
+                        if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.8) {
+                            authors.get(integerStringEntry.getKey()).setOrder(n);
+                        }
                     }
-
                 }
             }
         }
@@ -357,11 +370,16 @@ public class MetaVO {
     public static String Kor2EngName(String name){
         StringBuilder stringBuilder = new StringBuilder();
         char[] chars = name.toCharArray();
+        Pattern compile = Pattern.compile(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*");
+
         for (char aChar : chars) {
-            stringBuilder.append(getENGFirstElement(aChar));
-            stringBuilder.append(getENGMiddleElement(aChar));
-            stringBuilder.append(getENGLastElement(aChar));
-            stringBuilder.append(" ");
+            Matcher matcher = compile.matcher(String.valueOf(aChar));
+            if (matcher.matches()) {
+                stringBuilder.append(getENGFirstElement(aChar));
+                stringBuilder.append(getENGMiddleElement(aChar));
+                stringBuilder.append(getENGLastElement(aChar));
+                stringBuilder.append(" ");
+            }
         }
         return stringBuilder.deleteCharAt(stringBuilder.length() - 1).toString();
     }
