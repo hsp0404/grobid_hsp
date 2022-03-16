@@ -8,6 +8,7 @@ import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.commons.lang3.StringUtils;
 import org.grobid.core.data.*;
+import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
 import scala.Option;
 
@@ -23,12 +24,14 @@ public class MetaVO {
 
     private String abstract_ko;
     private String abstract_en;
+    
+    private List<AuthorVO> authors;
 
-    private Set<String> authors_ko;
-    private Set<String> authors_en;
+//    private Set<String> authors_ko;
+//    private Set<String> authors_en;
 
-    private List<Affiliation> affiliation_ko;
-    private List<Affiliation> affiliation_en;
+//    private List<Affiliation> affiliation_ko;
+//    private List<Affiliation> affiliation_en;
 
     private Set<String> keywords_ko;
     private Set<String> keywords_en;
@@ -58,10 +61,11 @@ public class MetaVO {
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
         this.keywords_ko = new LinkedHashSet<>();
         this.keywords_en = new LinkedHashSet<>();
-        this.affiliation_ko = new ArrayList<>();
-        this.affiliation_en = new ArrayList<>();
-        this.authors_ko = new LinkedHashSet<>();
-        this.authors_en = new LinkedHashSet<>();
+//        this.affiliation_ko = new ArrayList<>();
+//        this.affiliation_en = new ArrayList<>();
+//        this.authors_ko = new LinkedHashSet<>();
+//        this.authors_en = new LinkedHashSet<>();
+        this.authors = new ArrayList<>();
         this.emails = new LinkedHashSet<>();
         this.koreanNamePattern = Pattern.compile("[가-힣]\\s?[가-힣]\\s?[가-힣]?[가-힣]?");
         this.englishNamePattern = Pattern.compile("[a-zA-Z]+([',. -][a-zA-Z ])?(['. -]?[a-zA-Z ]+)+");
@@ -160,6 +164,7 @@ public class MetaVO {
             if(authors.get(i).getLang().equals("kr")){
                 StringBuilder sb = new StringBuilder();
                 sb.append(authors.get(i).getFirstName() == null ? "" : authors.get(i).getFirstName());
+                sb.append(" ");
                 sb.append(authors.get(i).getLastName() == null ? "" : authors.get(i).getLastName());
                 String engName = Kor2EngName(sb.toString());
                 indexKorName.put(i, engName);
@@ -168,29 +173,57 @@ public class MetaVO {
 
         int n = 0;
         Soundex soundex = new Soundex();
+        aut:
         for (Person author : authors) {
             if (author.getLang().equals("en")) {
                 n++;
                 author.setOrder(n);
                 StringBuilder sb = new StringBuilder();
-                String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase();
-                String lastName = author.getLastName() == null ? "" : author.getLastName().toLowerCase();
-                sb.append(firstName.replaceAll("-", " "));
-                sb.append(" ");
-                sb.append(lastName.replaceAll("-", " "));
-                for (Map.Entry<Integer, String> integerStringEntry : indexKorName.entrySet()) {
-                    if(soundex.difference(sb.toString(), integerStringEntry.getValue()) >= 3){
-                        if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.7) {
-                            authors.get(integerStringEntry.getKey()).setOrder(n);
+                String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
+                String middleName = author.getMiddleName() == null ? "" : author.getMiddleName().toLowerCase().replaceAll("-", "");
+                String lastName = author.getLastName() == null ? "" : author.getLastName().toLowerCase().replaceAll("-", "");
+                String fName = TextUtilities.capitalizeFully(firstName, TextUtilities.fullPunctuations);
+                String mName = TextUtilities.capitalizeFully(middleName, TextUtilities.fullPunctuations);
+                String lName = TextUtilities.capitalizeFully(lastName, TextUtilities.fullPunctuations);
+                if(!middleName.equals("")){
+                    sb.append(fName);
+                    sb.append(mName);
+                    sb.append(" ");
+                } else{
+                    sb.append(fName);
+                    sb.append(" ");
+                }
+                sb.append(lName);
+                String engName = sb.toString();
+                String[] engNameSplit = engName.split(" ");
+                if (indexKorName.isEmpty()) {
+                    this.authors.add(new AuthorVO(author));
+                }else{
+                    compare:
+                    for (Map.Entry<Integer, String> integerStringEntry : indexKorName.entrySet()) {
+                        String korName = integerStringEntry.getValue();
+                        boolean result = true;
+                        String[] korNameSplit = korName.split(" ");
+                        for (int i = 0; i < engNameSplit.length; i++) {
+                            if (soundex.difference(engNameSplit[i], korNameSplit[i]) < 3
+                                || ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false) < 0.5) {
+                                result = false;
+                                continue compare;
+                            }
                         }
-                    }else{
-                        if (ratcliffObershelpDistance(sb.toString(), integerStringEntry.getValue(), false) >= 0.8) {
-                            authors.get(integerStringEntry.getKey()).setOrder(n);
+                        if (result) {
+                            Pair<Person, Person> matchedAuthor = new Pair<>(authors.get(integerStringEntry.getKey()), author);
+                            this.authors.add(new AuthorVO(matchedAuthor));
+                            continue aut;
                         }
                     }
                 }
             }
         }
+
+        
+
+
     }
 
     public void setEmail(String emails){
@@ -202,34 +235,34 @@ public class MetaVO {
         }
     }
 
-    public void setAffiliation(List<Affiliation> affiliations) {
-        for (Affiliation aff : affiliations) {
-            String rawText = aff.getRawAffiliationString();
-            Language lang = detect(rawText);
-            if (lang.name().equals("ENGLISH")) {
-                affiliation_en.add(aff);
-            }else{
-                affiliation_ko.add(aff);
-            }
-
-        }
-    }
-
-    public List<Affiliation> getAffiliation_ko() {
-        return affiliation_ko;
-    }
-
-    public void setAffiliation_ko(List<Affiliation> affiliation_ko) {
-        this.affiliation_ko = affiliation_ko;
-    }
-
-    public List<Affiliation> getAffiliation_en() {
-        return affiliation_en;
-    }
-
-    public void setAffiliation_en(List<Affiliation> affiliation_en) {
-        this.affiliation_en = affiliation_en;
-    }
+//    public void setAffiliation(List<Affiliation> affiliations) {
+//        for (Affiliation aff : affiliations) {
+//            String rawText = aff.getRawAffiliationString();
+//            Language lang = detect(rawText);
+//            if (lang.name().equals("ENGLISH")) {
+//                affiliation_en.add(aff);
+//            }else{
+//                affiliation_ko.add(aff);
+//            }
+//
+//        }
+//    }
+//
+//    public List<Affiliation> getAffiliation_ko() {
+//        return affiliation_ko;
+//    }
+//
+//    public void setAffiliation_ko(List<Affiliation> affiliation_ko) {
+//        this.affiliation_ko = affiliation_ko;
+//    }
+//
+//    public List<Affiliation> getAffiliation_en() {
+//        return affiliation_en;
+//    }
+//
+//    public void setAffiliation_en(List<Affiliation> affiliation_en) {
+//        this.affiliation_en = affiliation_en;
+//    }
 
     public String getTitle_ko() {
         return title_ko;
@@ -247,13 +280,13 @@ public class MetaVO {
         this.abstract_ko = abstract_ko;
     }
 
-    public Set<String> getAuthors_ko() {
-        return authors_ko;
-    }
-
-    public void setAuthors_ko(Set<String> authors_ko) {
-        this.authors_ko = authors_ko;
-    }
+//    public Set<String> getAuthors_ko() {
+//        return authors_ko;
+//    }
+//
+//    public void setAuthors_ko(Set<String> authors_ko) {
+//        this.authors_ko = authors_ko;
+//    }
 
     public Set<String> getKeywords_ko() {
         return keywords_ko;
@@ -279,13 +312,13 @@ public class MetaVO {
         this.abstract_en = abstract_en;
     }
 
-    public Set<String> getAuthors_en() {
-        return authors_en;
-    }
-
-    public void setAuthors_en(Set<String> authors_en) {
-        this.authors_en = authors_en;
-    }
+//    public Set<String> getAuthors_en() {
+//        return authors_en;
+//    }
+//
+//    public void setAuthors_en(Set<String> authors_en) {
+//        this.authors_en = authors_en;
+//    }
 
     public Set<String> getKeywords_en() {
         return keywords_en;
@@ -367,21 +400,52 @@ public class MetaVO {
         this.assetPath = assetPath;
     }
 
+    public List<AuthorVO> getAuthors() {
+        return authors;
+    }
+
+    public void setAuthors(List<AuthorVO> authors) {
+        this.authors = authors;
+    }
+
     public static String Kor2EngName(String name){
         StringBuilder stringBuilder = new StringBuilder();
         char[] chars = name.toCharArray();
         Pattern compile = Pattern.compile(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*");
 
-        for (char aChar : chars) {
-            Matcher matcher = compile.matcher(String.valueOf(aChar));
-            if (matcher.matches()) {
-                stringBuilder.append(getENGFirstElement(aChar));
-                stringBuilder.append(getENGMiddleElement(aChar));
-                stringBuilder.append(getENGLastElement(aChar));
+        for (int i = 0; i < chars.length; i++) {
+            Matcher matcher = compile.matcher(String.valueOf(chars[i]));
+            if (chars[i] == ' ') {
                 stringBuilder.append(" ");
             }
+            if (matcher.matches()) {
+                if (chars[i] == '이') {
+                    stringBuilder.append("lee");
+                    stringBuilder.append(" ");
+                    continue;
+                }
+                if (chars[i] == '유' && i == chars.length - 1) {
+                    stringBuilder.append("yoo");
+                    stringBuilder.append(" ");
+                    continue;
+                }
+                if (chars[i] == '최') {
+                    stringBuilder.append("choi");
+                    stringBuilder.append(" ");
+                    continue;
+                }
+                stringBuilder.append(getENGFirstElement(chars[i]));
+                String engLastElement = getENGLastElement(chars[i]);
+                if (engLastElement.equals("") || engLastElement.equals("ng")) {
+                    stringBuilder.append(getENGMiddleElement(chars[i]).replaceAll("ar", "a"));
+                    stringBuilder.append(engLastElement);
+                }else{
+                    stringBuilder.append(getENGMiddleElement(chars[i]));
+                    stringBuilder.append(engLastElement);
+                }
+            }
         }
-        return stringBuilder.deleteCharAt(stringBuilder.length() - 1).toString();
+        return stringBuilder.toString();
     }
 
     /* 초성, 중성, 종성 */
@@ -391,7 +455,7 @@ public class MetaVO {
 
     /* 초성, 중성, 종성 에 대한 영어 매핑 */
     private static final String[] efirstSounds = {"k", "kk", "n", "d", "dd", "r", "m", "p", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"};
-    private static final String[] emiddleSounds = {"ar", "ae", "ya", "ye", "u", "ae", "ye", "ye", "o", "wha", "whe", "whe", "yo", "wo", "wo", "whe", "we", "yu", "ue", "ae", "i"};
+    private static final String[] emiddleSounds = {"ar", "ae", "ya", "ye", "eo", "ae", "yu", "ye", "o", "wa", "whe", "whe", "yo", "oo", "wo", "whe", "we", "yu", "ue", "ee", "i"};
     private static final String[] elastSounds = {"", "k", "uk", "None", "n", "n", "n", "None", "l", "l", "None", "None", "None", "None", "None", "None", "m", "b", "p", "s", "ss", "ng", "t", "c", "c", "t", "p", "h"};
     /* 여기서 영어매핑 알파벳단어가 잘 안맞다면 적절히 바꿔서 사용하세요 */
 

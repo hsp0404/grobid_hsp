@@ -44,11 +44,15 @@ public class Person {
     }
 
     public void setFirstName(String f) {
-        firstName = f;
         if (f.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+            firstName = f.replaceAll(" ", "");
             lang = "kr";
-        } else {
+        } else if(f.matches(".*[a-zA-Z]+.*")){
             lang = "en";
+            firstName = f;
+        } else{
+            lang = "etc";
+            firstName = f;
         }
     }
 
@@ -65,11 +69,15 @@ public class Person {
     }
 
     public void setLastName(String f) {
-        lastName = f;
         if (f.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
             lang = "kr";
-        } else{
+            lastName = f;
+        } else if(f.matches(".*[a-zA-Z]+.*")){
             lang = "en";
+            lastName = f;
+        } else{
+            lang = "etc";
+            lastName = f;
         }
     }
 
