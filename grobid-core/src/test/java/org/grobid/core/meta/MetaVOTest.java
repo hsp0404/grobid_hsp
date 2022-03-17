@@ -10,51 +10,80 @@ import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
 import scala.Option;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.grobid.core.meta.MetaVO.Kor2EngName;
 
 public class MetaVOTest extends TestCase {
+    public MetaVOTest() throws Exception {
+    }
+    
     List<Person> testPersonList = new ArrayList<Person>();
-//    Person tempEngPerson = new Person();
-//    Person tempKorPerson = new Person();
     List<AuthorVO> authors = new ArrayList<>();
-    String[] korName = {"박해성", "김상운", "정현종"};
-    String[] engName = {"HaeSeong Park", "Kim Sang-Un", "Jung Hyun-Jong"};
+    String path = System.getProperty("user.dir");
+    List<String> nameLine = new ArrayList<>();
+    Map<String,String> nameMap = new HashMap<>();
+
+
+    //    String[] korName = {"박해성", "김상운", "정현종"};
+//    String[] engName = {"HaeSeong Park", "Kim Sang-Un", "Jung Hyun-Jong"};
+    List<String> korName = new ArrayList<>();
+    List<String> engName = new ArrayList<>();
     
+    public void nameInit() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(path + "/src/test/java/org/grobid/core/meta/kor_eng_name.txt"));
+        String str;
+        while ((str = br.readLine()) != null) {
+            nameLine.add(str);
+        }
+        Collections.shuffle(nameLine);
+        for (String str2 : nameLine) {
+            String[] split = str2.split(" / ");
+            korName.add(split[0]);
+            engName.add(split[1]);
+            nameMap.put(split[0], split[1]);
+        }
+        br.close();
+    }
     
 
-    public List<Person> getTestPersonList() {
-        for (int i = 0; i < this.korName.length; i++) {
+    public List<Person> getTestPersonList() throws IOException {
+        nameInit();
 
-            for (String k : korName) {
-                Person korTemp = new Person();
-                korTemp.setLastName(k.substring(0,1));
-                korTemp.setFirstName(k.substring(1));
-                korTemp.setLang("kr");
-                testPersonList.add(korTemp);
-            }
-            for (String s : engName) {
-                String n = TextUtilities.capitalizeFully(s, TextUtilities.fullPunctuations);
-                String n2 = n.replaceAll("-", "");
-                String[] split = n2.split(" ");
-                Person engTemp = new Person();
-                engTemp.setLastName(split[1]);
-                engTemp.setFirstName(split[0]);
-                engTemp.setLang("en");
-                testPersonList.add(engTemp);
-            }
+        for (String k : korName) {
+            Person korTemp = new Person();
+            korTemp.setLastName(k.substring(0,1));
+            korTemp.setFirstName(k.substring(1));
+            korTemp.setLang("kr");
+            testPersonList.add(korTemp);
+        }
+        for (String s : engName) {
+            String n = TextUtilities.capitalizeFully(s, TextUtilities.fullPunctuations);
+            String n2 = n.replaceAll("-", "");
+            String[] split = n2.split(" ");
+            Person engTemp = new Person();
+            engTemp.setLastName(split[1]);
+            engTemp.setFirstName(split[0]);
+            engTemp.setLang("en");
+            testPersonList.add(engTemp);
         }
         
         
         return testPersonList;
     }
 
-    public void testSetAuthor() throws EncoderException {
+    public void testSetAuthor() throws EncoderException, IOException {
         HashMap<Integer, String> indexKorName = new HashMap<>();
         List<Person> authors = getTestPersonList();
         for (int i = 0; i < authors.size(); i++) {
@@ -105,12 +134,21 @@ public class MetaVOTest extends TestCase {
                             int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
                             double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
                             if(difference == 4 || v >= 0.9){
+                                System.out.println("--pass first--");
+                                System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
+                                System.out.println("diff : " + difference + " ratcliff : " + v);
                                 continue;
                             }
                             if (difference < 3 || v < 0.4) {
+                                System.out.println("--not pass--");
+                                System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
+                                System.out.println("diff : " + difference + " ratcliff : " + v);
                                 result = false;
                                 continue compare;
                             }
+                            System.out.println("--pass last");
+                            System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
+                            System.out.println("diff : " + difference + " ratcliff : " + v);
                         }
 
                         if (result) {
@@ -127,7 +165,14 @@ public class MetaVOTest extends TestCase {
                 this.authors.add(new AuthorVO(author));
             }
         }
-        assertEquals(korName.length, this.authors.size());
+        int z = 0;
+        for (AuthorVO author : this.authors) {
+            z++;
+            System.out.println(z);
+            System.out.println(author.getName_en() == null ? author.getName_kr() : author.getName_en());
+            assertEquals(nameMap.get(author.getName_kr()).replaceAll("-", "").toLowerCase(), author.getName_en().toLowerCase());
+        }
+        assertEquals(korName.size(), this.authors.size());
         
     }
 
