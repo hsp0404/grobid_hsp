@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.grobid.core.data.Person;
 import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import scala.Option;
 
 import java.io.BufferedReader;
@@ -18,14 +20,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.remove;
 import static org.grobid.core.meta.MetaVO.Kor2EngName;
+import static org.junit.Assert.assertEquals;
 
-public class MetaVOTest extends TestCase {
+public class MetaVOTest {
     public MetaVOTest() throws Exception {
     }
     
@@ -34,10 +40,7 @@ public class MetaVOTest extends TestCase {
     String path = System.getProperty("user.dir");
     List<String> nameLine = new ArrayList<>();
     Map<String,String> nameMap = new HashMap<>();
-
-
-    //    String[] korName = {"박해성", "김상운", "정현종"};
-//    String[] engName = {"HaeSeong Park", "Kim Sang-Un", "Jung Hyun-Jong"};
+    
     List<String> korName = new ArrayList<>();
     List<String> engName = new ArrayList<>();
     
@@ -45,7 +48,12 @@ public class MetaVOTest extends TestCase {
         BufferedReader br = new BufferedReader(new FileReader(path + "/src/test/java/org/grobid/core/meta/kor_eng_name.txt"));
         String str;
         while ((str = br.readLine()) != null) {
-            nameLine.add(str);
+            if (str.equals("stop")) {
+                break;
+            }
+            if (str.length() >= 1) {
+                nameLine.add(str);
+            }
         }
         Collections.shuffle(nameLine);
         for (String str2 : nameLine) {
@@ -83,7 +91,16 @@ public class MetaVOTest extends TestCase {
         return testPersonList;
     }
 
+    @DisplayName("셔플 후 통합 테스트")
+    @RepeatedTest(20)
     public void testSetAuthor() throws EncoderException, IOException {
+        ArrayList<Pair<String, String>> lastNamePairs = new ArrayList<>();
+        lastNamePairs.add(new Pair<>("jo", "cho"));
+        lastNamePairs.add(new Pair<>("seong", "sung"));
+        lastNamePairs.add(new Pair<>("gu", "koo"));
+        lastNamePairs.add(new Pair<>("gi", "kee"));
+        lastNamePairs.add(new Pair<>("jung", "jeong"));
+        lastNamePairs.add(new Pair<>("sin", "shin"));
         HashMap<Integer, String> indexKorName = new HashMap<>();
         List<Person> authors = getTestPersonList();
         for (int i = 0; i < authors.size(); i++) {
@@ -96,14 +113,65 @@ public class MetaVOTest extends TestCase {
                 indexKorName.put(i, engName);
             }
         }
+        
+        double range = 0.875;
+        int soundexRange = 4;
 
+        Set<Integer> removeList = new HashSet<>();
+        int n = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+        removeList.clear();
+
+        soundexRange = 4;
+        range = 0.65;
+        int n2 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+        
+        removeList.clear();
+
+        soundexRange = 3;
+        range = 0.4;
+        int n3 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+        
+        
+        
+        
+        if (n == 0 && n2 == 0 && n3 == 0 && authors.size() != 0) {
+            for (Person author : authors) {
+                this.authors.add(new AuthorVO(author));
+            }
+        }
+        int z = 0;
+        for (AuthorVO author : this.authors) {
+            z++;
+//            System.out.println(z);
+//            System.out.println(author.getName_en() == null ? author.getName_kr() : author.getName_en());
+            assertEquals(nameMap.get(author.getName_kr()).replaceAll("-", "").toLowerCase(), author.getName_en().toLowerCase());
+        }
+        assertEquals(korName.size(), this.authors.size());
+        
+    }
+
+    private int process(HashMap<Integer, String> indexKorName, List<Person> authors, Set<Integer> removeList, double range, int soundexRange, List<Pair<String, String>> lastNamePairs) throws EncoderException {
         int n = 0;
         Soundex soundex = new Soundex();
         aut:
         for (Person author : authors) {
+            if (author.isMatched()) {
+                continue;
+            }
             if (author.getLang().equals("en")) {
                 n++;
-                author.setOrder(n);
                 StringBuilder sb = new StringBuilder();
                 String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
                 String middleName = author.getMiddleName() == null ? "" : author.getMiddleName().toLowerCase().replaceAll("-", "");
@@ -130,28 +198,33 @@ public class MetaVOTest extends TestCase {
                         String korName = integerStringEntry.getValue();
                         boolean result = true;
                         String[] korNameSplit = korName.split(" ");
+                        compareEach:
                         for (int i = 0; i < engNameSplit.length; i++) {
                             int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
                             double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
-                            if(difference == 4 || v >= 0.9){
-                                System.out.println("--pass first--");
+                            if(isLastNameMatch(engNameSplit[i], korNameSplit[i], lastNamePairs)){
+                                difference = 4;
+                                v = 1.0;
+                            }
+                            if(difference == 4 && v >= 0.9){
                                 System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
                                 System.out.println("diff : " + difference + " ratcliff : " + v);
-                                continue;
+                                continue compareEach;
                             }
-                            if (difference < 3 || v < 0.4) {
-                                System.out.println("--not pass--");
+                            if (difference < soundexRange || v < range) {
                                 System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
                                 System.out.println("diff : " + difference + " ratcliff : " + v);
                                 result = false;
                                 continue compare;
                             }
-                            System.out.println("--pass last");
                             System.out.println(korNameSplit[i] + ", " + engNameSplit[i]);
                             System.out.println("diff : " + difference + " ratcliff : " + v);
                         }
 
                         if (result) {
+                            removeList.add(integerStringEntry.getKey());
+                            authors.get(integerStringEntry.getKey()).setMatched(true);
+                            author.setMatched(true);
                             Pair<Person, Person> matchedAuthor = new Pair<>(authors.get(integerStringEntry.getKey()), author);
                             this.authors.add(new AuthorVO(matchedAuthor));
                             continue aut;
@@ -160,20 +233,19 @@ public class MetaVOTest extends TestCase {
                 }
             }
         }
-        if (n == 0 && authors.size() != 0) {
-            for (Person author : authors) {
-                this.authors.add(new AuthorVO(author));
+        return n;
+    }
+    
+    private boolean isLastNameMatch(String a, String b, List<Pair<String, String>> pairList){
+        boolean result = false;
+        a = a.toLowerCase();
+        b = b.toLowerCase();
+        for (Pair<String, String> p : pairList) {
+            if ((p.getA().equals(a) && p.getB().equals(b)) || (p.getA().equals(b) && p.getB().equals(a))) {
+                result = true;
             }
         }
-        int z = 0;
-        for (AuthorVO author : this.authors) {
-            z++;
-            System.out.println(z);
-            System.out.println(author.getName_en() == null ? author.getName_kr() : author.getName_en());
-            assertEquals(nameMap.get(author.getName_kr()).replaceAll("-", "").toLowerCase(), author.getName_en().toLowerCase());
-        }
-        assertEquals(korName.size(), this.authors.size());
-        
+        return result;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
