@@ -146,19 +146,6 @@ public class MetaVO {
     }
 
     public void setAuthor(List<Person> authors) throws EncoderException {
-//        authors = authors.replace("and", "");
-//        authors = authors.replace("And", "");
-//        authors = authors.replace("by", "");
-//        authors = authors.replace("By", "");
-//
-//        Matcher enMatcher = englishNamePattern.matcher(authors);
-//        Matcher koMatcher = koreanNamePattern.matcher(authors);
-//        while(enMatcher.find()){
-//            this.authors_en.add(enMatcher.group().trim());
-//        }
-//        while(koMatcher.find()){
-//            this.authors_ko.add(koMatcher.group().replaceAll(" ", "").trim());
-//        }
         HashMap<Integer, String> indexKorName = new HashMap<>();
         for (int i = 0; i < authors.size(); i++) {
             if(authors.get(i).getLang().equals("kr")){
@@ -190,7 +177,7 @@ public class MetaVO {
                     sb.append(mName);
                     sb.append(" ");
                 } else{
-                    sb.append(fName);
+                    sb.append(fName.replaceAll(" ", ""));
                     sb.append(" ");
                 }
                 sb.append(lName);
@@ -205,12 +192,17 @@ public class MetaVO {
                         boolean result = true;
                         String[] korNameSplit = korName.split(" ");
                         for (int i = 0; i < engNameSplit.length; i++) {
-                            if (soundex.difference(engNameSplit[i], korNameSplit[i]) < 3
-                                || ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false) < 0.5) {
+                            int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
+                            double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
+                            if(difference == 4 || v >= 0.9){
+                                continue;
+                            }
+                            if (difference < 3 || v < 0.4) {
                                 result = false;
                                 continue compare;
                             }
                         }
+                        
                         if (result) {
                             Pair<Person, Person> matchedAuthor = new Pair<>(authors.get(integerStringEntry.getKey()), author);
                             this.authors.add(new AuthorVO(matchedAuthor));
@@ -218,6 +210,11 @@ public class MetaVO {
                         }
                     }
                 }
+            }
+        }
+        if (n == 0 && authors.size() != 0) {
+            for (Person author : authors) {
+                this.authors.add(new AuthorVO(author));
             }
         }
 
@@ -436,7 +433,7 @@ public class MetaVO {
                 }
                 stringBuilder.append(getENGFirstElement(chars[i]));
                 String engLastElement = getENGLastElement(chars[i]);
-                if (engLastElement.equals("") || engLastElement.equals("ng")) {
+                if (engLastElement.equals("") || engLastElement.equals("ng") || engLastElement.equals("m")) {
                     stringBuilder.append(getENGMiddleElement(chars[i]).replaceAll("ar", "a"));
                     stringBuilder.append(engLastElement);
                 }else{

@@ -45,8 +45,10 @@ MFA
 M.D . 
 Doctor of Medicine 
 MLIS 
+M.A.
 M.S . 
 MSN 
+M.S.N.
 MSW 
 Notary 
 registered Pharmacist 

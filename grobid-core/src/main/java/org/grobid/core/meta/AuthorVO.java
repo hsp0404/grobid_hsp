@@ -25,7 +25,7 @@ public class AuthorVO {
             sb.append(person.getMiddleName() == null ? "" : person.getMiddleName() + " ");
             sb.append(person.getLastName());
             this.name_en = sb.toString();
-        } else{
+        } else if (lang.equals("kr")){
             sb.append(person.getLastName());
             sb.append(person.getMiddleName() == null ? "" : person.getMiddleName());
             sb.append(person.getFirstName());
