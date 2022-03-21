@@ -1156,11 +1156,11 @@ public class Document implements Serializable {
             return false;
         }
 
-        if (go.getWidth() < 50) {
+        if (go.getWidth() < 10) {
             return false;
         }
 
-        if (go.getHeight() < 50) {
+        if (go.getHeight() < 10) {
             return false;
         }
 
