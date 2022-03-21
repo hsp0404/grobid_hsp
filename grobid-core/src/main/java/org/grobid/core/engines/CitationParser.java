@@ -448,6 +448,14 @@ public class CitationParser extends AbstractParser {
             //String clusterContent = LayoutTokensUtil.toText(cluster.concatTokens());
             String clusterContent = LayoutTokensUtil.normalizeDehyphenizeText(cluster.concatTokens());
             //String clusterNonDehypenizedContent = LayoutTokensUtil.toText(cluster.concatTokens());
+            if (clusterContent.matches("[가-힣]?[0-9]+권")) {
+                biblio.setVolume(clusterContent.replaceAll("[^0-9]",""));
+                continue;
+            } else if (clusterContent.matches("[가-힣]?[0-9]+호")) {
+                biblio.setIssue(clusterContent.replaceAll("[^0-9]",""));
+                continue;
+            }
+            
             if (clusterLabel.equals(TaggingLabels.CITATION_TITLE)) {
                 if (biblio.getTitle() == null)
                     biblio.setTitle(clusterContent);
