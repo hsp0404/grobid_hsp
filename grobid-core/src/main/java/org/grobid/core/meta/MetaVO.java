@@ -56,6 +56,11 @@ public class MetaVO {
 
     private String key;
 
+    private static List<Pair<String, String>> lastNamePairs;
+
+
+
+
 
     public MetaVO() {
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
@@ -69,6 +74,13 @@ public class MetaVO {
         this.emails = new LinkedHashSet<>();
         this.koreanNamePattern = Pattern.compile("[가-힣]\\s?[가-힣]\\s?[가-힣]?[가-힣]?");
         this.englishNamePattern = Pattern.compile("[a-zA-Z]+([',. -][a-zA-Z ])?(['. -]?[a-zA-Z ]+)+");
+        lastNamePairs = new ArrayList<>();
+        lastNamePairs.add(new Pair<>("jo", "cho"));
+        lastNamePairs.add(new Pair<>("seong", "sung"));
+        lastNamePairs.add(new Pair<>("gu", "koo"));
+        lastNamePairs.add(new Pair<>("gi", "kee"));
+        lastNamePairs.add(new Pair<>("jung", "jeong"));
+        lastNamePairs.add(new Pair<>("sin", "shin"));
     }
 
     public Language detect(String text){
@@ -147,6 +159,23 @@ public class MetaVO {
 
     public void setAuthor(List<Person> authors) throws EncoderException {
         HashMap<Integer, String> indexKorName = new HashMap<>();
+        for (Person a : authors) {
+            if (a.getLang().equals("kr")) {
+                if (a.getFirstName() == null && a.getLastName().length() == 2) {
+                    String lastName = a.getLastName();
+                    String resultLastName = lastName.substring(0, 1);
+                    String resultFirstName = lastName.substring(1);
+                    a.setFirstName(resultFirstName);
+                    a.setLastName(resultLastName);
+                } else if (a.getLastName() == null && a.getFirstName().length() == 2) {
+                    String firstName = a.getFirstName();
+                    String resultFirstName = firstName.substring(1);
+                    String resultLastName = firstName.substring(0, 1);
+                    a.setFirstName(resultFirstName);
+                    a.setLastName(resultLastName);
+                }
+            }
+        }
         for (int i = 0; i < authors.size(); i++) {
             if(authors.get(i).getLang().equals("kr")){
                 StringBuilder sb = new StringBuilder();
@@ -158,13 +187,63 @@ public class MetaVO {
             }
         }
 
+        double range = 0.875;
+        int soundexRange = 4;
+
+        Set<Integer> removeList = new HashSet<>();
+        int n = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+        removeList.clear();
+
+        soundexRange = 4;
+        range = 0.65;
+        int n2 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+
+        removeList.clear();
+
+        soundexRange = 3;
+        range = 0.4;
+        int n3 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+
+        removeList.clear();
+
+        soundexRange = 2;
+        range = 0.4;
+        int n4 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+
+        if (n == 0 && n2 == 0 && n3 == 0 && n4 == 0 && authors.size() != 0) {
+            for (Person author : authors) {
+                this.authors.add(new AuthorVO(author));
+            }
+        }
+
+    }
+
+    private int process(HashMap<Integer, String> indexKorName, List<Person> authors, Set<Integer> removeList, double range, int soundexRange, List<Pair<String, String>> lastNamePairs) throws EncoderException {
         int n = 0;
         Soundex soundex = new Soundex();
         aut:
         for (Person author : authors) {
+            if (author.isMatched()) {
+                continue;
+            }
             if (author.getLang().equals("en")) {
                 n++;
-                author.setOrder(n);
                 StringBuilder sb = new StringBuilder();
                 String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
                 String middleName = author.getMiddleName() == null ? "" : author.getMiddleName().toLowerCase().replaceAll("-", "");
@@ -184,6 +263,7 @@ public class MetaVO {
                 String engName = sb.toString();
                 String[] engNameSplit = engName.split(" ");
                 if (indexKorName.isEmpty()) {
+                    author.setMatched(true);
                     this.authors.add(new AuthorVO(author));
                 }else{
                     compare:
@@ -191,19 +271,27 @@ public class MetaVO {
                         String korName = integerStringEntry.getValue();
                         boolean result = true;
                         String[] korNameSplit = korName.split(" ");
+                        compareEach:
                         for (int i = 0; i < engNameSplit.length; i++) {
                             int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
                             double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
-                            if(difference == 4 || v >= 0.9){
-                                continue;
+                            if(isLastNameMatch(engNameSplit[i], korNameSplit[i], lastNamePairs)){
+                                difference = 4;
+                                v = 1.0;
                             }
-                            if (difference < 3 || v < 0.4) {
+                            if(difference == 4 && v >= 0.9){
+                                continue compareEach;
+                            }
+                            if (difference < soundexRange || v < range) {
                                 result = false;
                                 continue compare;
                             }
                         }
-                        
+
                         if (result) {
+                            removeList.add(integerStringEntry.getKey());
+                            authors.get(integerStringEntry.getKey()).setMatched(true);
+                            author.setMatched(true);
                             Pair<Person, Person> matchedAuthor = new Pair<>(authors.get(integerStringEntry.getKey()), author);
                             this.authors.add(new AuthorVO(matchedAuthor));
                             continue aut;
@@ -212,16 +300,86 @@ public class MetaVO {
                 }
             }
         }
-        if (n == 0 && authors.size() != 0) {
-            for (Person author : authors) {
-                this.authors.add(new AuthorVO(author));
+        return n;
+    }
+
+    private boolean isLastNameMatch(String a, String b, List<Pair<String, String>> pairList){
+        boolean result = false;
+        a = a.toLowerCase();
+        b = b.toLowerCase();
+        for (Pair<String, String> p : pairList) {
+            if ((p.getA().equals(a) && p.getB().equals(b)) || (p.getA().equals(b) && p.getB().equals(a))) {
+                result = true;
             }
         }
+        return result;
+    }
+        
+        
+
+//        int n = 0;
+//        Soundex soundex = new Soundex();
+//        aut:
+//        for (Person author : authors) {
+//            if (author.getLang().equals("en")) {
+//                n++;
+//                StringBuilder sb = new StringBuilder();
+//                String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
+//                String middleName = author.getMiddleName() == null ? "" : author.getMiddleName().toLowerCase().replaceAll("-", "");
+//                String lastName = author.getLastName() == null ? "" : author.getLastName().toLowerCase().replaceAll("-", "");
+//                String fName = TextUtilities.capitalizeFully(firstName, TextUtilities.fullPunctuations);
+//                String mName = TextUtilities.capitalizeFully(middleName, TextUtilities.fullPunctuations);
+//                String lName = TextUtilities.capitalizeFully(lastName, TextUtilities.fullPunctuations);
+//                if(!middleName.equals("")){
+//                    sb.append(fName);
+//                    sb.append(mName);
+//                    sb.append(" ");
+//                } else{
+//                    sb.append(fName.replaceAll(" ", ""));
+//                    sb.append(" ");
+//                }
+//                sb.append(lName);
+//                String engName = sb.toString();
+//                String[] engNameSplit = engName.split(" ");
+//                if (indexKorName.isEmpty()) {
+//                    this.authors.add(new AuthorVO(author));
+//                }else{
+//                    compare:
+//                    for (Map.Entry<Integer, String> integerStringEntry : indexKorName.entrySet()) {
+//                        String korName = integerStringEntry.getValue();
+//                        boolean result = true;
+//                        String[] korNameSplit = korName.split(" ");
+//                        for (int i = 0; i < engNameSplit.length; i++) {
+//                            int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
+//                            double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
+//                            if(difference == 4 || v >= 0.9){
+//                                continue;
+//                            }
+//                            if (difference < 3 || v < 0.4) {
+//                                result = false;
+//                                continue compare;
+//                            }
+//                        }
+//                        
+//                        if (result) {
+//                            Pair<Person, Person> matchedAuthor = new Pair<>(authors.get(integerStringEntry.getKey()), author);
+//                            this.authors.add(new AuthorVO(matchedAuthor));
+//                            continue aut;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        if (n == 0 && authors.size() != 0) {
+//            for (Person author : authors) {
+//                this.authors.add(new AuthorVO(author));
+//            }
+//        }
 
         
 
 
-    }
+//    }
 
     public void setEmail(String emails){
         if(emails != null && emails != ""){
@@ -416,28 +574,58 @@ public class MetaVO {
                 stringBuilder.append(" ");
             }
             if (matcher.matches()) {
-                if (chars[i] == '이') {
+                if (chars[i] == '이' && i == chars.length - 1) {
                     stringBuilder.append("lee");
                     stringBuilder.append(" ");
                     continue;
-                }
-                if (chars[i] == '유' && i == chars.length - 1) {
-                    stringBuilder.append("yoo");
-                    stringBuilder.append(" ");
-                    continue;
-                }
-                if (chars[i] == '최') {
+                } else if (chars[i] == '최'){
                     stringBuilder.append("choi");
                     stringBuilder.append(" ");
                     continue;
+                } else if (chars[i] == '유' && i == chars.length - 1) {
+                    stringBuilder.append("yoo");
+                    stringBuilder.append(" ");
+                    continue;
+                } else if (chars[i] == '정' && i == chars.length - 1) {
+                    stringBuilder.append("jung");
+                    stringBuilder.append(" ");
+                    continue;
+                } else if (chars[i] == '운') {
+                    stringBuilder.append("woon");
+                    continue;
+                } else if (chars[i] == '연') {
+                    stringBuilder.append("yeon");
+                    continue;
+                } else if (chars[i] == '윤') {
+                    stringBuilder.append("yoon");
+                    continue;
+                } else if (chars[i] == '은') {
+                    stringBuilder.append("eun");
+                    continue;
+                } else if (chars[i] == '근') {
+                    stringBuilder.append("geun");
+                    continue;
+                } else if (chars[i] == '학') {
+                    stringBuilder.append("hak");
+                    continue;
                 }
-                stringBuilder.append(getENGFirstElement(chars[i]));
+                String engFirstElement = getENGFirstElement(chars[i]);
+                String engMiddleElement = getENGMiddleElement(chars[i]);
                 String engLastElement = getENGLastElement(chars[i]);
-                if (engLastElement.equals("") || engLastElement.equals("ng") || engLastElement.equals("m")) {
-                    stringBuilder.append(getENGMiddleElement(chars[i]).replaceAll("ar", "a"));
+                
+                if (i == chars.length - 1 && chars[i] == '박') {
+                    stringBuilder.append("p");
+                } else if (engFirstElement.equals("") && (engMiddleElement.equals("oo"))) {
+                    stringBuilder.append("w");
+                } else {
+                    stringBuilder.append(engFirstElement);
+                }
+                
+                if (engLastElement.equals("") || engLastElement.equals("ng") || engLastElement.equals("m") || engLastElement.equals("n")) {
+                    stringBuilder.append(engMiddleElement.replaceAll("ar", "a"));
                     stringBuilder.append(engLastElement);
-                }else{
-                    stringBuilder.append(getENGMiddleElement(chars[i]));
+                } else {
+                    stringBuilder.append(engMiddleElement);
                     stringBuilder.append(engLastElement);
                 }
             }
@@ -451,7 +639,7 @@ public class MetaVO {
     private static final char[] lastSounds = {' ', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'};
 
     /* 초성, 중성, 종성 에 대한 영어 매핑 */
-    private static final String[] efirstSounds = {"k", "kk", "n", "d", "dd", "r", "m", "p", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"};
+    private static final String[] efirstSounds = {"k", "kk", "n", "d", "dd", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"};
     private static final String[] emiddleSounds = {"ar", "ae", "ya", "ye", "eo", "ae", "yu", "ye", "o", "wa", "whe", "whe", "yo", "oo", "wo", "whe", "we", "yu", "ue", "ee", "i"};
     private static final String[] elastSounds = {"", "k", "uk", "None", "n", "n", "n", "None", "l", "l", "None", "None", "None", "None", "None", "None", "m", "b", "p", "s", "ss", "ng", "t", "c", "c", "t", "p", "h"};
     /* 여기서 영어매핑 알파벳단어가 잘 안맞다면 적절히 바꿔서 사용하세요 */

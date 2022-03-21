@@ -71,8 +71,9 @@ public class MetaVOTest {
 
         for (String k : korName) {
             Person korTemp = new Person();
-            korTemp.setLastName(k.substring(0,1));
-            korTemp.setFirstName(k.substring(1));
+//            korTemp.setLastName(k.substring(0,2));
+//            korTemp.setFirstName(k.substring(1));
+            korTemp.setFirstName(k.substring(0,2));
             korTemp.setLang("kr");
             testPersonList.add(korTemp);
         }
@@ -103,6 +104,23 @@ public class MetaVOTest {
         lastNamePairs.add(new Pair<>("sin", "shin"));
         HashMap<Integer, String> indexKorName = new HashMap<>();
         List<Person> authors = getTestPersonList();
+        for (Person a : authors) {
+            if (a.getLang().equals("kr")) {
+                if (a.getFirstName() == null && a.getLastName().length() == 2) {
+                    String lastName = a.getLastName();
+                    String resultLastName = lastName.substring(0, 1);
+                    String resultFirstName = lastName.substring(1);
+                    a.setFirstName(resultFirstName);
+                    a.setLastName(resultLastName);
+                } else if (a.getLastName() == null && a.getFirstName().length() == 2) {
+                    String firstName = a.getFirstName();
+                    String resultFirstName = firstName.substring(1);
+                    String resultLastName = firstName.substring(0, 1);
+                    a.setFirstName(resultFirstName);
+                    a.setLastName(resultLastName);
+                }
+            }
+        }
         for (int i = 0; i < authors.size(); i++) {
             if(authors.get(i).getLang().equals("kr")){
                 StringBuilder sb = new StringBuilder();
@@ -138,6 +156,16 @@ public class MetaVOTest {
         soundexRange = 3;
         range = 0.4;
         int n3 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+
+        for (Integer r : removeList) {
+            indexKorName.remove(r);
+        }
+
+        removeList.clear();
+
+        soundexRange = 2;
+        range = 0.4;
+        int n4 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
 
         for (Integer r : removeList) {
             indexKorName.remove(r);

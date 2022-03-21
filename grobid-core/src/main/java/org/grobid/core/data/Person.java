@@ -30,6 +30,7 @@ public class Person {
     private boolean corresp = false;
     private String lang = null;
     private int order = -1;
+    private boolean isMatched = false;
 
     private List<LayoutToken> layoutTokens = new ArrayList<>();
     private List<String> affiliationBlocks = null;
@@ -807,5 +808,13 @@ public class Person {
 
     public void setOrder(int order) {
         this.order = order;
+    }
+
+    public boolean isMatched() {
+        return isMatched;
+    }
+
+    public void setMatched(boolean matched) {
+        isMatched = matched;
     }
 }
