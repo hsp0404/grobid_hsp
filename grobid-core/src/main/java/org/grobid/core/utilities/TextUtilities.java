@@ -1016,6 +1016,42 @@ public class TextUtilities {
             }
         }
 
+        if (lastName != null && firstName != null) {
+            char[] firstChar = firstName.toCharArray();
+            char[] lastChar = lastName.toCharArray();
+            StringBuilder sb = new StringBuilder();
+            for (char c : firstChar) {
+                if(Character.isUpperCase(c)){
+                    sb.append(c);
+                }
+            }
+            for (char c : lastChar) {
+                if(Character.isUpperCase(c)){
+                    sb.append(c);
+                }
+            }
+            if (!sb.toString().equals("")) {
+                variants.add(sb.toString().toLowerCase());
+            }
+
+            sb = new StringBuilder();
+            for (char c : lastChar) {
+                if(Character.isUpperCase(c)){
+                    sb.append(c);
+                }
+            }
+            for (char c : firstChar) {
+                if(Character.isUpperCase(c)){
+                    sb.append(c);
+                }
+            }
+            if (!sb.toString().equals("")) {
+                variants.add(sb.toString().toLowerCase());
+            }
+        }
+
+        
+
         return variants;
     }
 
