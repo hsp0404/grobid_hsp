@@ -226,12 +226,27 @@ public class MetaVO {
             indexKorName.remove(r);
         }
 
+        // 영문저자만 있는 것
         if (n == 0 && n2 == 0 && n3 == 0 && n4 == 0 && authors.size() != 0) {
             for (Person author : authors) {
                 this.authors.add(new AuthorVO(author));
             }
         }
+        if (this.authors.size() == 1) {
+            this.authors.get(0).setCorresp(true);
+        }
 
+    }
+
+    private static String clear(String s, String delimiters) {
+        char[] chars = s.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        for (char a : chars) {
+            if (delimiters.indexOf(a) == -1) {
+                sb.append(a);
+            }
+        }
+        return sb.toString();
     }
 
     private int process(HashMap<Integer, String> indexKorName, List<Person> authors, Set<Integer> removeList, double range, int soundexRange, List<Pair<String, String>> lastNamePairs) throws EncoderException {
@@ -248,9 +263,12 @@ public class MetaVO {
                 String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
                 String middleName = author.getMiddleName() == null ? "" : author.getMiddleName().toLowerCase().replaceAll("-", "");
                 String lastName = author.getLastName() == null ? "" : author.getLastName().toLowerCase().replaceAll("-", "");
-                String fName = TextUtilities.capitalizeFully(firstName, TextUtilities.fullPunctuations);
-                String mName = TextUtilities.capitalizeFully(middleName, TextUtilities.fullPunctuations);
-                String lName = TextUtilities.capitalizeFully(lastName, TextUtilities.fullPunctuations);
+//                String fName = TextUtilities.capitalizeFully(firstName, TextUtilities.fullPunctuations);
+//                String mName = TextUtilities.capitalizeFully(middleName, TextUtilities.fullPunctuations);
+//                String lName = TextUtilities.capitalizeFully(lastName, TextUtilities.fullPunctuations);
+                String fName = clear(firstName, TextUtilities.fullPunctuations);
+                String mName = clear(middleName, TextUtilities.fullPunctuations);
+                String lName = clear(lastName, TextUtilities.fullPunctuations);
                 if(!middleName.equals("")){
                     sb.append(fName);
                     sb.append(mName);
