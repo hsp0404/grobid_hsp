@@ -324,7 +324,7 @@ public class GrobidRestProcessFiles {
                     biblVO.setPageRange(bibDataSet.getResBib().getPageRange());
                     biblVO.setJournalTitle(bibDataSet.getResBib().getJournal());
                     biblVO.setIssue(bibDataSet.getResBib().getIssue());
-                    biblVO.setVolume(bibDataSet.getResBib().getVolumeBlock());
+                    biblVO.setVolume(bibDataSet.getResBib().getVolume());
                     biblVO.setRawText(bibDataSet.getRawBib().replaceAll("\n",""));
                     biblVO.setInstitution(bibDataSet.getResBib().getInstitution());
                     biblVO.setUrl(bibDataSet.getResBib().getWeb());
