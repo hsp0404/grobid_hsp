@@ -206,6 +206,20 @@ public class HeaderParser extends AbstractParser {
                 // remove invalid authors (no last name, noise, etc.)
                 resHeader.setFullAuthors(Person.sanityCheck(resHeader.getFullAuthors()));
 
+                List<Person> fullAuthors = resHeader.getFullAuthors();
+                l:
+                for (Person fullAuthor : fullAuthors) {
+                    List<LayoutToken> layoutTokens = fullAuthor.getLayoutTokens();
+                    for (LayoutToken layoutToken : layoutTokens) {
+                        int blockPtr = layoutToken.getBlockPtr();
+                        String authorText = doc.getBlocks().get(blockPtr).getText().toLowerCase();
+                        if (authorText.contains("corresp") || authorText.contains("교신저자") || authorText.contains("교신 저자")) {
+                            fullAuthor.setCorresp(true);
+                            continue l;
+                        }
+                    }
+                }
+
                 resHeader.setFullAffiliations(
                         parsers.getAffiliationAddressParser().processReflow(res, tokenizations));
                 resHeader.attachEmails();

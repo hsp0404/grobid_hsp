@@ -54,7 +54,11 @@ public class AuthorVO {
         this.name_en = sb.toString();
         
         // todo corresponding author 
-        this.isCorresp = false;
+        if (koreanAuthor.getCorresp() || engAuthor.getCorresp()) {
+            this.isCorresp = true;
+        } else{
+            this.isCorresp = false;
+        }
 
         orcid = koreanAuthor.getORCID();
         if(orcid == null){

@@ -1206,8 +1206,45 @@ public class BiblioItem {
     public void addFullAuthor(Person aut) {
         if (fullAuthors == null)
             fullAuthors = new ArrayList<Person>();
-        if (!fullAuthors.contains(aut))
+//        if (!fullAuthors.contains(aut))
+//            fullAuthors.add(aut);
+        if (fullAuthors.size() == 0) {
             fullAuthors.add(aut);
+            return;
+        }
+
+        String fullPunctuations = TextUtilities.fullPunctuations;
+        StringBuilder sb1 = new StringBuilder();
+        StringBuilder sb2 = new StringBuilder();
+        String autName = TextUtilities.capitalizeFully(sb1.append(aut.getFirstName()).append(aut.getMiddleName()).append(aut.getLastName()).toString(), fullPunctuations);
+        for (Person fullAuthor : fullAuthors) {
+            String name = TextUtilities.capitalizeFully(sb2.append(fullAuthor.getFirstName()).append(fullAuthor.getMiddleName()).append(fullAuthor.getLastName()).toString(), fullPunctuations);
+            if (autName.equalsIgnoreCase(name)) {
+                fullAuthor.getLayoutTokens().addAll(aut.getLayoutTokens());
+                if (fullAuthor.getTitle() == null && aut.getTitle() != null) {
+                    fullAuthor.setTitle(aut.getTitle());
+                }
+                if (fullAuthor.getSuffix() == null && aut.getSuffix() != null) {
+                    fullAuthor.setSuffix(aut.getSuffix());
+                }
+                if (fullAuthor.getORCID() == null && aut.getORCID() != null) {
+                    fullAuthor.setORCID(aut.getORCID());
+                }
+                if (!fullAuthor.getCorresp() && aut.getCorresp()) {
+                    fullAuthor.setCorresp(true);
+                }
+                if (fullAuthor.getMarkers() == null && aut.getMarkers() != null ) {
+                    fullAuthor.setMarkers(aut.getMarkers());
+                }
+                return;
+            }
+            sb2.delete(0, sb2.length());
+        }
+        fullAuthors.add(aut);
+    }
+
+    private void addFullAuthorWithMerge(List<Person> fullAuthors, Person aut) {
+        
     }
 
     public void addFullEditor(Person aut) {
@@ -3433,6 +3470,10 @@ public class BiblioItem {
                             // and we associate this affiliation to this author
                             if (best != -1) {
                                 fullAuthors.get(best).addAffiliation(aff);
+                                String rawText = aff.getRawAffiliationString().toLowerCase();
+                                if (rawText.contains("corresp") || rawText.contains("교신저자") || rawText.contains("교신 저자")) {
+                                    fullAuthors.get(best).setCorresp(true);
+                                }
                                 aff.setFailAffiliation(false);
                                 winners.add(Integer.valueOf(best));
                             }
