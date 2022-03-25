@@ -799,8 +799,6 @@ var grobid = (function($) {
                                 
                                 if(preview){
                                     img_viewer.append(preview);
-                                }else{
-                                    console.log(figures[j])
                                 }
                             }
                             let file = document.getElementById("api_file").files[i];
@@ -899,15 +897,15 @@ var grobid = (function($) {
         let caption = document.createElement("small");
         let header = document.createElement("small");
         caption.className = "preview-caption";
-        caption.innerText = object.caption;
+        caption.innerText = object.note;
         header.className = "preview-caption";
-        header.innerText = object.header;
-        let textArea = object.textArea
+산        header.innerText = object.header + object.caption;
+        let textArea = object.textArea;
+        let fileReader = new FileReader();
         for(let j=0; j<textArea.length; j++){
-            let fileReader = new FileReader();
             fileReader.onload =(ev) => {
                 PDFJS.getDocument(fileReader.result).then((pdf) => {
-                    pdf.getPage(object.page)
+                    pdf.getPage(textArea[j].page)
                         .then((page) => {
                             let scale = 2;
                             let viewport = page.getViewport(scale);
@@ -923,7 +921,18 @@ var grobid = (function($) {
                                 resultCanvas.height = (textArea[j].height*2)+35;
                                 resultContext.drawImage(canvas, ((textArea[j].x*2)-10), ((textArea[j].y*2)-10), ((textArea[j].width*2)+25), ((textArea[j].height*2)+25), 0,0, (textArea[j].width*2)+35, (textArea[j].height*2)+35);
                                 resultCanvas.className = "body-img";
-                                preview.append(resultCanvas);
+                                if(preview.innerHTML.indexOf('canvas') != -1){
+                                    let children = preview.children[0];
+                                    let prevResolve = children.height * children.width;
+                                    let resolve = resultCanvas.height * resultCanvas.width;
+
+                                    if (prevResolve > resolve) {
+                                        resultCanvas.style.display = 'none';
+                                    } else{
+                                        children.style.display = 'none';
+                                    }
+                                }
+                                preview.prepend(resultCanvas);
                                 preview.append(header);
                             })
 
@@ -940,8 +949,10 @@ var grobid = (function($) {
             let figureWin = window.open("", "image_popup", "width=" + e.target.width + ", height=" + (Number(e.target.height) + 120));
             figureWin.document.write("<html><body style='margin:0'>")
             figureWin.document.write("<small style='font-size: 25px'>header : "+ header.innerText + "</small><br/>")
-            figureWin.document.write("<a href=javascript:window.close()><img src='" + e.target.toDataURL('image/png') + "' border=0></a><br/>");
-            figureWin.document.write("<small style='font-size: 25px'>caption : "+ caption.innerText + "</small>")
+            $(e.target).parent().find("canvas").each((i,e) => {
+                figureWin.document.write("<a href=javascript:window.close()><img src='" + e.toDataURL('image/png') + "' border=0></a><br/>");
+            })
+            figureWin.document.write("<small style='font-size: 25px'>note : "+ caption.innerText + "</small>")
             figureWin.document.write("</body><html>");
         }
         return preview;
