@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import org.grobid.core.layout.BoundingBox;
 import org.grobid.core.layout.LayoutToken;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,6 +41,34 @@ public class BoundingBoxCalculator {
             }
         }
         return b;
+    }
+    
+    public static List<BoundingBox> calculateDiffPage(List<LayoutToken> tokens) {
+        List<BoundingBox> boundingBoxes = new ArrayList<>();
+        int page = tokens.get(0).getPage();
+
+        List<List<LayoutToken>> lists = new ArrayList<>();
+        List<LayoutToken> temp = new ArrayList<>();
+        for (int i = 0; i < tokens.size(); i++) {
+            if (i == tokens.size() -1){
+                temp.add(tokens.get(i));
+                lists.add(temp);
+                continue;
+            }
+            if (LayoutTokensUtil.noCoords(tokens.get(i))) {
+                continue;
+            }
+            if (page != tokens.get(i).getPage()) {
+                lists.add(temp);
+                temp = new ArrayList<>();
+                page = tokens.get(i).getPage();
+            }
+            temp.add(tokens.get(i));
+        }
+        for (List<LayoutToken> list : lists) {
+            boundingBoxes.add(calculateOneBox(list));
+        }
+        return boundingBoxes;
     }
 
     public static List<BoundingBox> calculate(List<LayoutToken> tokens) {
