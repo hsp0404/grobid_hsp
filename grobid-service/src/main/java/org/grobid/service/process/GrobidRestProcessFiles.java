@@ -177,13 +177,15 @@ public class GrobidRestProcessFiles {
                 throw new GrobidServiceException(
                     "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
             }
+            
+            Boolean pdfSave = false;
 
             for (Map.Entry<String, InputStream> map : paramMap.entrySet()) {
                 String fileName = map.getKey();
                 InputStream inputStream = map.getValue();
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 DigestInputStream dis = new DigestInputStream(inputStream, md);
-
+                
                 originFile = IOUtilities.writeInputFile(dis);
 
 
@@ -191,47 +193,51 @@ public class GrobidRestProcessFiles {
 
                 Boolean isDuplicate = false;
 
-                File dir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp);
-                File doneDir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp+"/done");
-                File[] files = dir.listFiles();
-                File[] doneFiles = doneDir.listFiles();
-                if(files != null && files.length > 0) {
-                    for (File file : files) {
-                        if (fileName.equals(file.getName())) {
-                            isDuplicate = true;
+                if (pdfSave) {
+
+                    File dir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp);
+                    File doneDir = new File(GrobidProperties.getGrobidHome().getPath()+trainTmp+"/done");
+                    File[] files = dir.listFiles();
+                    File[] doneFiles = doneDir.listFiles();
+                    if(files != null && files.length > 0) {
+                        for (File file : files) {
+                            if (fileName.equals(file.getName())) {
+                                isDuplicate = true;
+                            }
                         }
                     }
-                }
-                if(doneFiles != null && doneFiles.length >0){
-                    for (File file : doneFiles) {
-                        if (fileName.equals(file.getName())) {
-                            isDuplicate = true;
+                    if(doneFiles != null && doneFiles.length >0){
+                        for (File file : doneFiles) {
+                            if (fileName.equals(file.getName())) {
+                                isDuplicate = true;
+                            }
                         }
                     }
-                }
-                if(!isDuplicate){
-                    try {
-                        FileInputStream copyStream = new FileInputStream(originFile);
-                        FileOutputStream destStream = new FileOutputStream(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName);
+                    if(!isDuplicate){
+                        try {
+                            FileInputStream copyStream = new FileInputStream(originFile);
+                            FileOutputStream destStream = new FileOutputStream(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName);
 
-                        FileChannel fcin = copyStream.getChannel();
-                        FileChannel fcout = destStream.getChannel();
+                            FileChannel fcin = copyStream.getChannel();
+                            FileChannel fcout = destStream.getChannel();
 
-                        long size=0;
-                        size = fcin.size();
-                        fcin.transferTo(0, size, fcout);
+                            long size=0;
+                            size = fcin.size();
+                            fcin.transferTo(0, size, fcout);
 
-                        fcout.close();
-                        fcin.close();
-                        copyStream.close();
-                        destStream.close();
+                            fcout.close();
+                            fcin.close();
+                            copyStream.close();
+                            destStream.close();
 
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
 
 //                    Files.copy(originFile.toPath(), Paths.get(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName));
+                    }
                 }
+
 
 
                 byte[] digest = md.digest();
