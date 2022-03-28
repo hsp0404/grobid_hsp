@@ -1022,7 +1022,31 @@ public class Document implements Serializable {
                         figure.setGraphicObjects(Lists.newArrayList(bestGo));
                         Engine.getCntManager().i("FigureCounters", "ASSIGNED_GRAPHICS_TO_FIGURES");
                     }
+                }
+                
+                for (Figure pageFigure : pageFigures) {
+                    if (pageFigure.getGraphicObjects() != null && pageFigure.getGraphicObjects().size() > 0) {
+                        for (int i = 0; i < pageFigure.getGraphicObjects().size(); i++) {
+                            GraphicObject matchedGo = pageFigure.getGraphicObjects().get(i);
+                            BoundingBox mbb = matchedGo.getBoundingBox();
 
+                            for (GraphicObject go : graphicObjects) {
+                                if (go.isUsed()) {
+                                    continue;
+                                }
+
+                                if (!isValidBitmapGraphicObject(go)) {
+                                    continue;
+                                }
+
+                                if (near(mbb, go.getBoundingBox())) {
+                                    go.setUsed(true);
+                                    pageFigure.getGraphicObjects().add(go);
+                                }
+
+                            }
+                        }
+                    }
                 }
             } else {
                 if (pageFigures.size() != graphicObjects.size()) {
@@ -1075,7 +1099,6 @@ public class Document implements Serializable {
                         figure.setGraphicObjects(Lists.newArrayList(bestGo));
                         Engine.getCntManager().i("FigureCounters", "ASSIGNED_GRAPHICS_TO_FIGURES");
                     }
-
                 }
 
             }
@@ -1135,6 +1158,15 @@ public class Document implements Serializable {
             }
         }
 
+    }
+
+    private static boolean near(BoundingBox b1, BoundingBox b2) {
+        boolean sameLine =  Math.abs(b1.getY() - b2.getY()) < 5
+            || Math.abs(b2.getX() - b1.getX()) < 5
+            || Math.abs(b1.getY2() - b2.getY2()) < 5
+            || Math.abs(b2.getX2() - b1.getX2()) < 5;
+        
+        return sameLine;
     }
 
     private boolean badStandaloneFigure(GraphicObject o) {
