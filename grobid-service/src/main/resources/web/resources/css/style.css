@@ -75,9 +75,17 @@ body {
 }
 
 .preview-img {
+    position: relative;
     width: 200px;
     height: 230px;
     margin-bottom: 20px;
+}
+
+.plus-mark {
+    position: absolute;
+    top: 77%;
+    right: 2%;
+    color: red;
 }
 
 .content {

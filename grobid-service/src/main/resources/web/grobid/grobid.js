@@ -899,10 +899,10 @@ var grobid = (function($) {
         caption.className = "preview-caption";
         caption.innerText = object.note;
         header.className = "preview-caption";
-산        header.innerText = object.header + object.caption;
+        header.innerText = object.header + object.caption;
         let textArea = object.textArea;
-        let fileReader = new FileReader();
         for(let j=0; j<textArea.length; j++){
+            let fileReader = new FileReader();
             fileReader.onload =(ev) => {
                 PDFJS.getDocument(fileReader.result).then((pdf) => {
                     pdf.getPage(textArea[j].page)
@@ -983,6 +983,12 @@ var grobid = (function($) {
                 }
                 figureWin.document.write("<small style='font-size: 25px'>"+ caption.innerText +"</small>")
                 figureWin.document.write("</body><html>");
+            }
+            if (image.length !== 1) {
+                let plusMarker = document.createElement("div");
+                plusMarker.className = "plus-mark"
+                plusMarker.innerText = "(+" + (image.length - 1) + ")";
+                preview.append(plusMarker);
             }
 
             preview.append(caption);
