@@ -30141,7 +30141,6 @@ WIRTSCHAFSTINFORMATIK
 국제어문학회
 국제중국학연구 
 한국중국학회
-군사 
 국방부 군사편찬연구소
 근대영미소설 
 한국근대영미소설학회
@@ -30234,7 +30233,6 @@ WIRTSCHAFSTINFORMATIK
 미국학논집
 Journal of American Studies 
 한국아메리카학회
-미학 
 한국미학회
 민속학연구 
 국립민속박물관
@@ -30274,7 +30272,6 @@ Journal of American Studies
 한국비평이론학회
 비평문학 
 한국비평문학회
-사림 
 수선사학회
 사학연구 
 한국사학회
@@ -30351,7 +30348,6 @@ Mission and Theology
 한국어문학회
 어학연구 
 서울대학교 언어교육원
-언어 
 한국언어학회
 언어과학 
 한국언어과학회
@@ -30365,7 +30361,6 @@ Mission and Theology
 한국언어정보학회
 언어학 
 대한언어학회
-언어학 
 한국언어학회
 여성문학연구 
 한국여성문학학회
@@ -30540,7 +30535,6 @@ Deutsch als Fremdsprache in Korea
 역사문화학회
 진단학보 
 진단학회
-철학 
 한국철학회
 철학과 현상학연구 
 한국현상학회
@@ -30665,7 +30659,6 @@ Journal of Studies on Korean National Movement
 한국한시학회
 한국현대문학연구 
 한국현대문학회
-한글 
 한글학회
 한말연구 
 한말연구학회
@@ -30704,7 +30697,6 @@ Journal of Studies on Korean National Movement
 현대영미어문학회
 현대영어영문학 
 한국현대영어영문학회
-형태론 
 어학전문 학술지 형태론 편집위원회
 호남고고학보 
 호남고고학회
@@ -30933,7 +30925,6 @@ Asian Journal of Latin American Studies
 미술교육연구논총 
 한국초등미술교육학회
 민사법학 
-가
 민사소송 
 한국민사소송법학회
 민주법학 
@@ -30948,7 +30939,6 @@ Asian Journal of Latin American Studies
 법과사회이론학회
 법제연구 
 한국법제연구원
-법조 
 법조협회
 법철학연구 
 한국법철학회
@@ -31485,7 +31475,6 @@ The SNU Journal of Education Research
 동아시아식생활학회
 미생물학회지 
 한국미생물학회
-복식 
 한국복식학회
 복식문화연구 
 복식문화학회
@@ -31941,7 +31930,6 @@ Transactions on Electrical and Electronic Materials
 경락경혈학회
 기본간호학회지 
 기본간호학회 
-당뇨병 
 대한당뇨병학회
 대한간호학회지 
 한국간호과학회
@@ -32210,7 +32198,6 @@ Yonsei Medical Journal
 대한수의학회
 목재공학 
 한국목재공학회
-바다 
 한국해양학회
 바이오시스템공학 
 한국농업기계학회

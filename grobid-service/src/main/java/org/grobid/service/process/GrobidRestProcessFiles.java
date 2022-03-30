@@ -9,11 +9,14 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.grobid.core.data.BibDataSet;
 import org.grobid.core.data.BiblioItem;
 import org.grobid.core.data.PatentItem;
+import org.grobid.core.data.Table;
 import org.grobid.core.document.Document;
 import org.grobid.core.document.DocumentPiece;
 import org.grobid.core.document.DocumentSource;
 import org.grobid.core.engines.Engine;
 import org.grobid.core.engines.config.GrobidAnalysisConfig;
+import org.grobid.core.exceptions.GrobidException;
+import org.grobid.core.exceptions.GrobidExceptionStatus;
 import org.grobid.core.factory.GrobidPoolingFactory;
 import org.grobid.core.layout.*;
 import org.grobid.core.main.batch.GrobidMain;
@@ -264,9 +267,6 @@ public class GrobidRestProcessFiles {
                 result = doc.getResHeader();
                 bibDataSetList = doc.getBibDataSets();
 
-                LanguageDetector detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
-
-
 
                 MetaVO metaVO = new MetaVO();
                 if(result.getTitle() != null){
@@ -298,7 +298,9 @@ public class GrobidRestProcessFiles {
                     metaVO.setFigures(doc.getFigures());
                 }
                 if (doc.getTables() != null) {
-                    metaVO.setTables(doc.getTables());
+                    List<Table> tables = doc.getTables();
+                    Collections.sort(tables);
+                    metaVO.setTables(tables);
                 }
 //                if (result.getFullAffiliations() != null) {
 //                    metaVO.setAffiliation(result.getFullAffiliations());
@@ -349,6 +351,13 @@ public class GrobidRestProcessFiles {
         } catch (NoSuchElementException nseExp) {
             LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
             response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (GrobidException exp){
+            if (exp.getStatus() == GrobidExceptionStatus.NO_BLOCKS) {
+                response = Response.status(Status.NO_CONTENT).entity(exp.getMessage()).build();
+            } else{
+                LOGGER.error("An unexpected exception occurs. ", exp);
+                response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+            }
         } catch (Exception exp) {
             LOGGER.error("An unexpected exception occurs. ", exp);
             response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();

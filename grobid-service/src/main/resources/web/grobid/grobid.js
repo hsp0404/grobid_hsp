@@ -760,8 +760,8 @@ var grobid = (function($) {
             xhr.open('POST', url, true);
             ShowRequest2();
             xhr.onreadystatechange = function (e) {
-                if (xhr.readyState == 4) {
-                    if (xhr.status == 200) {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
                         // document.getElementById("json-viewer").innerText = '';
                         let response = e.target.response;
                         // $('#json-viewer').jsonViewer(response);
@@ -880,9 +880,11 @@ var grobid = (function($) {
                         // let trainUrl = "/api/trainTempPdf"
                         // trainXhr.open("GET", trainUrl, true);
                         // trainXhr.send();
+                    } else if (xhr.status === 204) {
+                        alert('Cannot find text in Pdf');
                     } else {
                         //AjaxError2("Response " + xhr.status + ": " + xhr.responseText);
-                        AjaxError2("Response " + xhr.status + ": " );
+                        AjaxError2("Response " + xhr.status + ": ");
                     }
                 }
             };

@@ -40,7 +40,7 @@ import static org.grobid.core.document.xml.XmlBuilderUtils.textNode;
  * Class for representing a table.
  *
  */
-public class Table extends Figure {
+public class Table extends Figure implements Comparable<Table> {
 	private List<LayoutToken> contentTokens = new ArrayList<>();
 	private List<LayoutToken> fullDescriptionTokens = new ArrayList<>();
 	private boolean goodTable = true;
@@ -411,5 +411,31 @@ public class Table extends Figure {
 
     public String getTeiId() {
         return "tab_" + this.id;
+    }
+    
+
+    @Override
+    public int compareTo(Table o) {
+        String oLabel = o.getLabel().replaceAll("[^0-9]", "");
+        String label = getLabel().replaceAll("[^0-9]", "");
+
+        if (oLabel.equals("") || oLabel == null) {
+            oLabel = o.getId();
+            o.setLabel(new StringBuilder().append(o.getId()));
+        }
+        if (label.equals("") || oLabel == null) {
+            label = getId();
+            setLabel(new StringBuilder().append(getId()));
+        }
+//        StringBuilder zero = new StringBuilder().append("0");
+//        if (oLabel.equals("")) {
+//            o.setLabel(zero);
+//            oLabel = zero.toString();
+//        }
+//        if (label.equals("")) {
+//            setLabel(zero);
+//            label = zero.toString();
+//        }
+        return Integer.parseInt(label) - Integer.parseInt(oLabel);
     }
 }

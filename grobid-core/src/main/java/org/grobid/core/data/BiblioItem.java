@@ -1855,6 +1855,10 @@ public class BiblioItem {
             res = res.substring(9);
         } else if (resLow.startsWith("mots clefs")) {
             res = res.substring(10);
+        } else if (resLow.startsWith("키워드") || resLow.startsWith("핵심어") || resLow.startsWith("중심어")) {
+            res = res.substring(3);
+        } else if (resLow.startsWith("중심 단어") || resLow.startsWith("핵심 단어")) {
+            res = res.substring(5);
         }
 		
         res = res.trim();
@@ -1903,7 +1907,7 @@ public class BiblioItem {
 	        if (st.countTokens() > 2) {
 	            while (st.hasMoreTokens()) {
 					String res = st.nextToken().trim();
-					if (res.startsWith(":")) {
+					if (res.startsWith(":") || res.startsWith("：")) {
 			            res = res.substring(1);
 			        }
 					res = res.replace("\n", " ").replace("  ", " ");

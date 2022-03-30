@@ -1025,6 +1025,7 @@ public class TextUtilities {
                     sb.append(c);
                 }
             }
+            variants.add(sb.toString().toLowerCase() + lastName.toLowerCase());
             for (char c : lastChar) {
                 if(Character.isUpperCase(c)){
                     sb.append(c);
@@ -1047,7 +1048,10 @@ public class TextUtilities {
             }
             if (!sb.toString().equals("")) {
                 variants.add(sb.toString().toLowerCase());
+                sb.delete(0,1);
+                variants.add(lastName.toLowerCase() + sb.toString().toLowerCase());
             }
+            
         }
 
         
