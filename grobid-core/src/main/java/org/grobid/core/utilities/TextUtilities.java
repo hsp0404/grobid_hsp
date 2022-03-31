@@ -22,8 +22,8 @@ import java.util.regex.Pattern;
  */
 public class TextUtilities {
 
-    public static final String punctuations = " ⋅ㆍ•*,:;?.․!)-−–\"“”‘’'`$]*\u2666\u2665\u2663\u2660\u00A0";
-    public static final String fullPunctuations = "(（[ ⋅ㆍ•*,:;?.․!/)）-−–‐«»„\"“”‘’'`$#@]*\u2666\u2665\u2663\u2660\u00A0";
+    public static final String punctuations = " ⋅ㆍ•･*,:;?.․!)-−–\"“”‘’'`$]*\u2666\u2665\u2663\u2660\u00A0";
+    public static final String fullPunctuations = "(（[ ⋅ㆍ•･*,:;?.․!/)）-−–‐«»„\"“”‘’'`$#@]*\u2666\u2665\u2663\u2660\u00A0";
     public static final String restrictedPunctuations = ",:;?.․!/-–«»„\"“”‘’'`*\u2666\u2665\u2663\u2660";
     public static String delimiters = "\n\r\t\f\u00A0" + fullPunctuations;
 
@@ -994,20 +994,20 @@ public class TextUtilities {
             variants.add(lastName);
 
             if (firstName != null) {
-                variants.add(firstName + SPACE + lastName);
-                variants.add(lastName + SPACE + firstName);
+                variants.add(firstName + lastName);
+                variants.add(lastName + firstName);
 
                 if (firstName.length() > 1) {
                     String firstInitial = firstName.substring(0, 1);
 
-                    variants.add(firstInitial + SPACE + lastName);
-                    variants.add(lastName + SPACE + firstInitial);
+                    variants.add(firstInitial + lastName);
+                    variants.add(lastName + firstInitial);
                 }
 
                 if (lastName.length() > 1) {
                     String lastInitial = lastName.substring(0, 1);
 
-                    variants.add(firstName + SPACE + lastInitial);
+                    variants.add(firstName + lastInitial);
                 }
             }
         } else {

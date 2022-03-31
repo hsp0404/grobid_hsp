@@ -207,15 +207,18 @@ public class HeaderParser extends AbstractParser {
                 resHeader.setFullAuthors(Person.sanityCheck(resHeader.getFullAuthors()));
 
                 List<Person> fullAuthors = resHeader.getFullAuthors();
-                l:
-                for (Person fullAuthor : fullAuthors) {
-                    List<LayoutToken> layoutTokens = fullAuthor.getLayoutTokens();
-                    for (LayoutToken layoutToken : layoutTokens) {
-                        int blockPtr = layoutToken.getBlockPtr();
-                        String authorText = doc.getBlocks().get(blockPtr).getText().toLowerCase();
-                        if (authorText.contains("corresp") || authorText.contains("교신저자") || authorText.contains("교신 저자")) {
-                            fullAuthor.setCorresp(true);
-                            continue l;
+
+                if (fullAuthors != null && fullAuthors.size() != 0) {
+                    l:
+                    for (Person fullAuthor : fullAuthors) {
+                        List<LayoutToken> layoutTokens = fullAuthor.getLayoutTokens();
+                        for (LayoutToken layoutToken : layoutTokens) {
+                            int blockPtr = layoutToken.getBlockPtr();
+                            String authorText = doc.getBlocks().get(blockPtr).getText().toLowerCase();
+                            if (authorText.contains("corresp") || authorText.contains("교신저자") || authorText.contains("교신 저자")) {
+                                fullAuthor.setCorresp(true);
+                                continue l;
+                            }
                         }
                     }
                 }
@@ -811,6 +814,10 @@ public class HeaderParser extends AbstractParser {
         List<TaggingTokenCluster> clusters = clusteror.cluster();
 
         biblio.generalResultMapping(result, tokenizations);
+        TaggingTokenCluster prevCluster = null;
+        TaggingTokenCluster nextCluster = null;
+        
+        int i = 0;
         for (TaggingTokenCluster cluster : clusters) {
             if (cluster == null) {
                 continue;
@@ -965,10 +972,54 @@ public class HeaderParser extends AbstractParser {
                 } else
                     biblio.setAddress(clusterContent);
             } else if (clusterLabel.equals(TaggingLabels.HEADER_EMAIL)) {
+                if (i > 0){
+                    prevCluster = clusters.get(i-1);
+                } else{
+                    prevCluster = null;
+                }
+                if (i != clusters.size() -1){
+                    nextCluster = clusters.get(i+1);
+                } else{
+                    nextCluster = null;
+                }
+                
                 if (biblio.getEmail() != null) {
-                    biblio.setEmail(biblio.getEmail() + "\t" + clusterNonDehypenizedContent);
-                } else
-                    biblio.setEmail(clusterNonDehypenizedContent);
+                    if (prevCluster != null) {
+                        String prevText = LayoutTokensUtil.toText(prevCluster.concatTokens()).toLowerCase();
+                        if (prevText.contains("correspond") || prevText.contains("교신저자") || prevText.contains("교신 저자")) {
+                            biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                            continue;
+                        } else {
+                            biblio.setEmail(biblio.getEmail() + "\t" + clusterNonDehypenizedContent);
+                        }
+                    }
+                    if (nextCluster != null) {
+                        String nextText = LayoutTokensUtil.toText(nextCluster.concatTokens()).toLowerCase();
+                        if (nextText.contains("correspond") || nextText.contains("교신저자") || nextText.contains("교신 저자")) {
+                            biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                        } else {
+                            biblio.setEmail(biblio.getEmail() + "\t" + clusterNonDehypenizedContent);
+                        }
+                    }
+                } else{
+                    if (prevCluster != null) {
+                        String prevText = LayoutTokensUtil.toText(prevCluster.concatTokens()).toLowerCase();
+                        if (prevText.contains("correspond") || prevText.contains("교신저자") || prevText.contains("교신 저자")) {
+                            biblio.setEmail("***"+clusterNonDehypenizedContent);
+                            continue;
+                        } else {
+                            biblio.setEmail(clusterNonDehypenizedContent);
+                        }
+                    }
+                    if (nextCluster != null) {
+                        String nextText = LayoutTokensUtil.toText(nextCluster.concatTokens()).toLowerCase();
+                        if (nextText.contains("correspond") || nextText.contains("교신저자") || nextText.contains("교신 저자")) {
+                            biblio.setEmail("***"+clusterNonDehypenizedContent);
+                        } else {
+                            biblio.setEmail(clusterNonDehypenizedContent);
+                        }
+                    }
+                }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_PUBNUM)) {
                 if (biblio.getPubnum() != null && isDifferentandNotIncludedContent(biblio.getPubnum(), clusterContent)) {
                     String currentPubnum = biblio.getPubnum();
@@ -1056,6 +1107,7 @@ public class HeaderParser extends AbstractParser {
             /*else if (clusterLabel.equals(TaggingLabels.HEADER_INTRO)) {
                 return biblio;
             }*/
+            i++;
         }
         return biblio;
     }

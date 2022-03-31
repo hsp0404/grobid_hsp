@@ -19,11 +19,17 @@ public class ClassicAuthorEmailAssigner implements AuthorEmailAssigner {
             } else {
                 // we asociate emails to the authors based on string proximity
                 for (String mail : emails) {
+                    Boolean isCorresp = false;
+                    if (mail.contains("***")) {
+                        isCorresp = true;
+                        mail = mail.replaceAll("\\*\\*\\*", "");
+                    }
+                    
                     int maxDist = 1000;
                     int best = -1;
                     int ind = mail.indexOf("@");
                     if (ind != -1) {
-                        String nam = mail.substring(0, ind).toLowerCase();
+                        String nam = mail.substring(0, ind).toLowerCase().replaceAll("[^a-zA-Z]", "");
                         int k = 0;
                         for (Person aut : fullAuthors) {
                             Integer kk = k;
@@ -46,6 +52,9 @@ public class ClassicAuthorEmailAssigner implements AuthorEmailAssigner {
                         // make sure that the best candidate found is not too far
                         if (best != -1 && maxDist < nam.length() / 2) {
                             Person winner = fullAuthors.get(best);
+                            if (isCorresp) {
+                                winner.setCorresp(isCorresp);
+                            }
                             winner.setEmail(mail);
                             winners.add(best);
                         }
