@@ -73,9 +73,11 @@ public class Figure {
         }
     };
     protected StringBuilder caption = null;
+    protected String subCaption = null;
     protected List<LayoutToken> captionLayoutTokens = new ArrayList<>();
     protected String labeledCaption = null;
     protected StringBuilder header = null;
+    protected String subHeader = null;
     protected StringBuilder content = null;
     protected StringBuilder label = null;
 
@@ -114,12 +116,28 @@ public class Figure {
         return header.toString();
     }
 
+    public String getSubHeader() {
+        return subHeader;
+    }
+
+    public void setSubHeader(String subHeader) {
+        this.subHeader = subHeader;
+    }
+
     public void appendCaption(String cap) {
         caption.append(cap);
     }
 
     public void appendCaptionLayoutTokens(List<LayoutToken> layoutTokens) {
         captionLayoutTokens.addAll(layoutTokens);
+    }
+
+    public String getSubCaption() {
+        return subCaption;
+    }
+
+    public void setSubCaption(String subCaption) {
+        this.subCaption = subCaption;
     }
 
     public String getCaption() {

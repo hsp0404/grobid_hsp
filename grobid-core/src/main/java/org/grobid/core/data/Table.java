@@ -438,4 +438,10 @@ public class Table extends Figure implements Comparable<Table> {
 //        }
         return Integer.parseInt(label) - Integer.parseInt(oLabel);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        Table t = (Table) obj;
+        return t.getLabel().equals(getLabel());
+    }
 }

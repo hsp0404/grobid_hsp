@@ -2185,7 +2185,47 @@ public class FullTextParser extends AbstractParser {
 					cluster.getFeatureBlock()
 			);
 
-            for (Table result : localResults) {
+            ArrayList<Table> newLocalResults = new ArrayList<>();
+
+            if(localResults.size() == 2){
+                Table t1 = localResults.get(0);
+                Table t2 = localResults.get(1);
+                
+                if (t1.equals(t2)) {
+                    if (t1.getContentTokens().size() == 0 && t2.getContentTokens().size() > 0) {
+                        t2.setSubHeader(t1.getHeader());
+                        t2.setSubCaption(t1.getCaption());
+                        try {
+                            ArrayList<BoundingBox> temp = new ArrayList<>();
+                            temp.add(t2.getTextArea().get(0).boundBox(t1.getTextArea().get(0)));
+                            t2.setTextArea(temp);
+//                            t2.getTextArea().set(0,t2.getTextArea().get(0).boundBox(t1.getTextArea().get(0)));
+                        } catch (IllegalStateException e) {
+                            newLocalResults.add(t2);
+                        }
+                        newLocalResults.add(t2);
+                    } else if (t2.getContentTokens().size() == 0 && t1.getContentTokens().size() > 0) {
+                        t1.setSubHeader(t2.getHeader());
+                        t1.setSubCaption(t2.getCaption());
+                        try{
+                            ArrayList<BoundingBox> temp = new ArrayList<>();
+                            temp.add(t1.getTextArea().get(0).boundBox(t2.getTextArea().get(0)));
+                            t1.setTextArea(temp);
+                        } catch (IllegalStateException e) {
+                            newLocalResults.add(t1);
+                        }
+                        newLocalResults.add(t1);
+                    } else{
+                        newLocalResults.add(t1);
+                        newLocalResults.add(t2);
+                    }
+                }
+            } else{
+                newLocalResults.addAll(localResults);
+            }
+            
+
+            for (Table result : newLocalResults) {
                 List<LayoutToken> localTokenizationTable = result.getLayoutTokens();
                 //result.setLayoutTokens(tokenizationTable);
 

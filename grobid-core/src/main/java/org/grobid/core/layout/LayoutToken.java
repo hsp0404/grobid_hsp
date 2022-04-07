@@ -11,7 +11,7 @@ import java.util.List;
  * Class for representing the layout information associated to a PDF object.
  *
  */
-public class LayoutToken implements Comparable<LayoutToken>, Serializable {
+public class LayoutToken implements Comparable<LayoutToken>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -308,4 +308,8 @@ public class LayoutToken implements Comparable<LayoutToken>, Serializable {
         }
     }
 
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }
