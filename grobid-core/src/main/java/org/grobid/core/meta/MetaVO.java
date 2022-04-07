@@ -33,8 +33,7 @@ public class MetaVO {
 //    private List<Affiliation> affiliation_ko;
 //    private List<Affiliation> affiliation_en;
 
-    private Set<String> keywords_ko;
-    private Set<String> keywords_en;
+    private List<String> keywords;
 
     private Set<String> emails;
     private String submission;
@@ -64,8 +63,7 @@ public class MetaVO {
 
     public MetaVO() {
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
-        this.keywords_ko = new LinkedHashSet<>();
-        this.keywords_en = new LinkedHashSet<>();
+        this.keywords = new ArrayList<>();
 //        this.affiliation_ko = new ArrayList<>();
 //        this.affiliation_en = new ArrayList<>();
 //        this.authors_ko = new LinkedHashSet<>();
@@ -91,11 +89,16 @@ public class MetaVO {
         if (title.contains("//lang//")) {
             String[] titles = title.split("//lang//");
             for (String t : titles) {
-                Language lang = detect(t);
-                if (lang.name().equals("ENGLISH")){
-                    this.title_en = t;
-                }else{
+//                Language lang = detect(t);
+//                if (lang.name().equals("ENGLISH")){
+//                    this.title_en = t;
+//                }else{
+//                    this.title_ko = t;
+//                }
+                if (t.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
                     this.title_ko = t;
+                } else{
+                    this.title_en = t;
                 }
             }
         }else{
@@ -105,7 +108,11 @@ public class MetaVO {
 //            }else{
 //                this.title_ko = title;
 //            }
-            this.title_ko = title;
+            if (title.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                this.title_ko = title;
+            } else{
+                this.title_en = title;
+            }
         }
     }
 
@@ -122,44 +129,59 @@ public class MetaVO {
         }
     }
 
-    public void setKeyword(List<Keyword> keywords) {
+    public List<String> getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(List<Keyword> keywords) {
         for (Keyword keyword : keywords) {
-            String k = keyword.getKeyword().trim();
-
-            if (k == null || k.equals("") || k.equals(" ") || k.equals(",") || k.equals("|") || k.equals(",,")) {
-                continue;
+            String k = keyword.getKeyword();
+            if (k != null && k.equals("")) {
+                this.keywords.add(k);
             }
-            if(k.contains("|")){
-                String[] split = k.split("\\|");
-                for (String s : split) {
-                    if (s == null || s.equals("") || s.equals(" ")) {
-                        continue;
-                    }
-                    setKeywordLanguageDetector(s);
-                }
-            }else{
-                setKeywordLanguageDetector(k);
-            }
-
         }
     }
 
-    private void setKeywordLanguageDetector(String k) {
-        Language lang = detect(k);
-        if (lang.name().equals("ENGLISH")) {
-            if(this.keywords_en.contains(k)){
-                this.keywords_ko.add(k);
-            }else{
-                this.keywords_en.add(k);
-            }
-        }else{
-            this.keywords_ko.add(k);
-        }
-    }
+    //    public void setKeyword(List<Keyword> keywords) {
+//        for (Keyword keyword : keywords) {
+//            String k = keyword.getKeyword().trim();
+//
+//            if (k == null || k.equals("") || k.equals(" ") || k.equals(",") || k.equals("|") || k.equals(",,")) {
+//                continue;
+//            }
+//            if(k.contains("|")){
+//                String[] split = k.split("\\|");
+//                for (String s : split) {
+//                    if (s == null || s.equals("") || s.equals(" ")) {
+//                        continue;
+//                    }
+//                    setKeywordLanguageDetector(s);
+//                }
+//            }else{
+//                setKeywordLanguageDetector(k);
+//            }
+//
+//        }
+//    }
+//
+//    private void setKeywordLanguageDetector(String k) {
+//        Language lang = detect(k);
+//        if (lang.name().equals("ENGLISH")) {
+//            if(this.keywords_en.contains(k)){
+//                this.keywords_ko.add(k);
+//            }else{
+//                this.keywords_en.add(k);
+//            }
+//        }else{
+//            this.keywords_ko.add(k);
+//        }
+//    }
 
     public void setAuthor(List<Person> authors) throws EncoderException {
         HashMap<Integer, String> indexKorName = new HashMap<>();
+        int order = 1;
         for (Person a : authors) {
+            a.setOrder(order++);
             if (a.getLang().equals("kr")) {
                 if (a.getFirstName() == null && a.getLastName().length() == 2) {
                     String lastName = a.getLastName();
@@ -235,6 +257,8 @@ public class MetaVO {
         if (this.authors.size() == 1) {
             this.authors.get(0).setCorresp(true);
         }
+        
+        Collections.sort(this.authors);
 
     }
 
@@ -291,6 +315,9 @@ public class MetaVO {
                         String[] korNameSplit = korName.split(" ");
                         compareEach:
                         for (int i = 0; i < engNameSplit.length; i++) {
+                            if (engNameSplit[i].matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                                continue;
+                            }
                             int difference = soundex.difference(engNameSplit[i], korNameSplit[i]);
                             double v = ratcliffObershelpDistance(engNameSplit[i], korNameSplit[i], false);
                             if(isLastNameMatch(engNameSplit[i], korNameSplit[i], lastNamePairs)){
@@ -461,13 +488,13 @@ public class MetaVO {
 //        this.authors_ko = authors_ko;
 //    }
 
-    public Set<String> getKeywords_ko() {
-        return keywords_ko;
-    }
-
-    public void setKeywords_ko(Set<String> keywords_ko) {
-        this.keywords_ko = keywords_ko;
-    }
+//    public Set<String> getKeywords_ko() {
+//        return keywords_ko;
+//    }
+//
+//    public void setKeywords_ko(Set<String> keywords_ko) {
+//        this.keywords_ko = keywords_ko;
+//    }
 
     public String getTitle_en() {
         return title_en;
@@ -493,13 +520,13 @@ public class MetaVO {
 //        this.authors_en = authors_en;
 //    }
 
-    public Set<String> getKeywords_en() {
-        return keywords_en;
-    }
-
-    public void setKeywords_en(Set<String> keywords_en) {
-        this.keywords_en = keywords_en;
-    }
+//    public Set<String> getKeywords_en() {
+//        return keywords_en;
+//    }
+//
+//    public void setKeywords_en(Set<String> keywords_en) {
+//        this.keywords_en = keywords_en;
+//    }
 
     public String getSubmission() {
         return submission;

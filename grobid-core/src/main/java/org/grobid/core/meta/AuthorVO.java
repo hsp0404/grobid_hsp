@@ -6,15 +6,17 @@ import org.grobid.core.utilities.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class AuthorVO {
+public class AuthorVO implements Comparable<AuthorVO> {
     private String name_kr;
     private String name_en;
     private boolean isCorresp;
     
     private String orcid;
-    private List<Affiliation> affiliations;
+    private List<AffiliationVO> affiliations;
     private String email;
+    private int order;
 
     public AuthorVO(Person person) {
         String lang = person.getLang();
@@ -32,7 +34,18 @@ public class AuthorVO {
             this.name_kr = sb.toString().replaceAll(" ","");
         }
         this.isCorresp = false;
-        this.affiliations = person.getAffiliations();
+        ArrayList<AffiliationVO> affiliationVOS = new ArrayList<>();
+        List<Affiliation> affiliations = person.getAffiliations();
+        if (affiliations != null) {
+            for (Affiliation affiliation : affiliations) {
+                if (affiliation.getInstitutions() != null || affiliation.getDepartments() != null) {
+                    affiliationVOS.add(new AffiliationVO(affiliation));
+                }
+            }
+        }
+        this.affiliations = affiliationVOS.stream()
+            .distinct()
+            .collect(Collectors.toList());
         this.orcid = person.getORCID();
         this.email = person.getEmail();
     }
@@ -54,32 +67,57 @@ public class AuthorVO {
         this.name_en = sb.toString();
         
         // todo corresponding author 
-        if (koreanAuthor.getCorresp() || engAuthor.getCorresp()) {
-            this.isCorresp = true;
-        } else{
-            this.isCorresp = false;
-        }
+        this.isCorresp = koreanAuthor.getCorresp() || engAuthor.getCorresp();
 
         orcid = koreanAuthor.getORCID();
         if(orcid == null){
             orcid = engAuthor.getORCID();
         }
 
-        // todo, kor, eng aff
-        List<Affiliation> korAff = koreanAuthor.getAffiliations();
-        List<Affiliation> engAff = engAuthor.getAffiliations();
-        if (korAff != null && engAff != null) {
-            if (korAff.size() > engAff.size()) {
-                this.affiliations = korAff;
-            } else{
-                this.affiliations = engAff;
-            }
-    
-        } else if (korAff != null) {
-            this.affiliations = korAff;
-        } else if (engAff != null) {
-            this.affiliations = engAff;
+        if (koreanAuthor.getOrder() > engAuthor.getOrder()) {
+            this.order = engAuthor.getOrder();
+        } else {
+            this.order = koreanAuthor.getOrder();
         }
+
+        ArrayList<AffiliationVO> affiliationVOS = new ArrayList<>();
+        List<Affiliation> koAff = koreanAuthor.getAffiliations();
+        List<Affiliation> enAff = engAuthor.getAffiliations();
+
+        if (koAff != null) {
+            for (Affiliation affiliation : koAff) {
+                if (affiliation.getInstitutions() != null || affiliation.getDepartments() != null) {
+                    affiliationVOS.add(new AffiliationVO(affiliation));
+                }
+            }
+        }
+        if (enAff != null) {
+            for (Affiliation affiliation : enAff) {
+                if (affiliation.getInstitutions() != null || affiliation.getDepartments() != null) {
+                    affiliationVOS.add(new AffiliationVO(affiliation));
+                }
+            }
+        }
+        this.affiliations = affiliationVOS.stream()
+            .distinct()
+            .collect(Collectors.toList());
+        
+
+//        // todo, kor, eng aff
+//        List<Affiliation> korAff = koreanAuthor.getAffiliations();
+//        List<Affiliation> engAff = engAuthor.getAffiliations();
+//        if (korAff != null && engAff != null) {
+//            if (korAff.size() > engAff.size()) {
+//                this.affiliations = korAff;
+//            } else{
+//                this.affiliations = engAff;
+//            }
+//    
+//        } else if (korAff != null) {
+//            this.affiliations = korAff;
+//        } else if (engAff != null) {
+//            this.affiliations = engAff;
+//        }
         email = koreanAuthor.getEmail();
         if (email == null) {
             email = engAuthor.getEmail();
@@ -112,11 +150,11 @@ public class AuthorVO {
         this.orcid = orcid;
     }
 
-    public List<Affiliation> getAffiliations() {
+    public List<AffiliationVO> getAffiliations() {
         return affiliations;
     }
 
-    public void setAffiliations(List<Affiliation> affiliations) {
+    public void setAffiliations(List<AffiliationVO> affiliations) {
         this.affiliations = affiliations;
     }
 
@@ -134,5 +172,14 @@ public class AuthorVO {
 
     public void setCorresp(boolean corresp) {
         isCorresp = corresp;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    @Override
+    public int compareTo(AuthorVO o) {
+        return getOrder() - o.getOrder();
     }
 }
