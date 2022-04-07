@@ -82,6 +82,95 @@ var grobid = (function($) {
                 $('#file-list').append(li);
             })
         })
+        
+        $('#close_modal').click(() => {
+            $('.modal').fadeOut();
+        })
+        
+        $('#url-submit').click(() => {
+            let url_ = $("#url-input").val()
+            let urlreq = new XMLHttpRequest();
+            urlreq.open("GET", url_);
+            urlreq.responseType = "test";
+            urlreq.onload = (e) => {
+                let htmlText = urlreq.response;
+                let url = htmlText.split("var docurl = '")[1];
+                url = url.split("';")[0].replaceAll("amp;", "");
+                let fileName = decodeURI(url).split('filename=')[1].split('&cn=')[0]
+                let req = new XMLHttpRequest();
+                req.open("GET", url);
+                req.responseType = "blob";
+
+                req.onload = (e) => {
+                    let blob = req.response;
+                    let file = new File([blob], fileName+".pdf");
+
+                    let container = new DataTransfer();
+                    container.items.add(file);
+                    $('#api_file')[0].files = container.files;
+
+                    $('.file-list-li').remove()
+                    let pdf_button = document.createElement("button");
+                    let down_button = document.createElement("button");
+                    let li = document.createElement("li");
+                    li.className = "file-list-li"
+                    li.innerText = fileName;
+
+                    pdf_button.innerText = "view pdf";
+                    pdf_button.id = "pdf0";
+                    pdf_button.className = "pdf-preview-btn"
+                    pdf_button.onclick = (e) => {
+                        e.stopPropagation()
+                        viewPdf(0);
+                    }
+
+                    down_button.innerText = "trainTemp에 저장하기";
+                    down_button.onclick = (e) => {
+                        e.stopPropagation()
+                        $('.modal').fadeIn();
+                        $('#savePdfBtn').unbind('click');
+                        $('#savePdfBtn').bind('click', () => {
+                            let problems = []
+                            $('input:checkbox[name="problem"]').each((i,e) => {
+                                if($(e).is(":checked")){
+                                    problems.push(e.value);
+                                }
+                            })
+                            if (problems.length > 0) {
+                                fileName = "("+problems+")" + fileName
+                            }
+                            let form = document.getElementById('apiForm');
+                            let formData = new FormData(form);
+                            formData.append("fileName", fileName);
+                            let xhr__ = new XMLHttpRequest();
+                            xhr__.responseType = 'json';
+                            xhr__.open('POST', "/api/saveTempPdf", true);
+                            xhr__.onreadystatechange = (e) => {
+                                if (xhr__.readyState === 4) {
+                                    if (xhr__.status === 200) {
+                                        alert('success save!')
+                                        $('.modal').fadeOut();
+                                    }
+                                }
+                            }
+                            xhr__.send(formData);
+                        })
+                    }
+
+                    $(li).append(pdf_button);
+                    $(li).append(down_button);
+                    $('#file-list').append(li);
+
+                };
+                req.send();
+                $("#url-input").val('')
+            }
+
+
+
+
+            urlreq.send();
+        })
 
 		$('#selectedService').change(function() {
 			processChange();
@@ -824,6 +913,7 @@ var grobid = (function($) {
                             img_viewer.className = "img_viewer"
 
                             for(let k=0; k<tables.length; k++){
+                                console.log(tables[k])
                                 let preview;
                                 preview = capture(tables[k], file, false);
                                 if(preview){
@@ -902,6 +992,9 @@ var grobid = (function($) {
         caption.innerText = object.note;
         header.className = "preview-caption";
         header.innerText = object.header + object.caption;
+        if(object.subHeader && object.subCaption){
+            header.innerText = header.innerText + "\n" + object.subHeader + object.subCaption;
+        }
         let textArea = object.textArea;
         for(let j=0; j<textArea.length; j++){
             let fileReader = new FileReader();
