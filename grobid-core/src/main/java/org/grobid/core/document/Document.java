@@ -1286,7 +1286,8 @@ public class Document implements Serializable {
 
             Block figBlock = getBlocks().get(blockPtr);
             String norm = LayoutTokensUtil.toText(figBlock.getTokens()).trim().toLowerCase();
-            if (norm.startsWith("fig") || norm.startsWith("abb") || norm.startsWith("scheme") || norm.startsWith("photo")
+            if (norm.startsWith("fig") || norm.startsWith("<fig") || norm.startsWith("[fig") 
+                    || norm.startsWith("abb") || norm.startsWith("scheme") || norm.startsWith("photo")
                     || norm.startsWith("gambar") || norm.startsWith("quadro")
                     || norm.startsWith("wykres")
                     || norm.startsWith("fuente")
