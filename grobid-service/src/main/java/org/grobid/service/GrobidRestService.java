@@ -276,6 +276,15 @@ public class GrobidRestService implements GrobidPaths {
         restProcessFiles.trainPdf();
     }
 
+    @Path(PATH_SAVE_TEMP)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_XML)
+    @POST
+    public Response saveTempPdf(@FormDataParam(INPUT) InputStream inputStream,
+                            @FormDataParam("fileName") String fileName){
+        return restProcessFiles.saveTempPdf(inputStream, fileName);
+    }
+
     private Response getMetaData(Map<String, InputStream> paramMap) throws Exception {
 
         return restProcessFiles.getMetaData(paramMap);

@@ -171,4 +171,6 @@ public interface GrobidPaths {
     String PATH_RANGE = "getRange";
 
     String PATH_TRAIN = "trainTempPdf";
+    
+    String PATH_SAVE_TEMP = "saveTempPdf";
 }

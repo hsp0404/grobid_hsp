@@ -5,6 +5,7 @@ import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.apache.commons.io.FileUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.grobid.core.data.BibDataSet;
 import org.grobid.core.data.BiblioItem;
@@ -161,6 +162,25 @@ public class GrobidRestProcessFiles {
             return 0;
         }
     }
+    
+    public Response saveTempPdf(InputStream in, String fileName) {
+        OutputStream out = null;
+        Response response = null;
+        final String trainTmp = "/trainTmp/pdf";
+        boolean isDuplicate = false;
+        try{
+            File file = new File(GrobidProperties.getGrobidHome().getPath() + trainTmp + "/" + fileName + ".pdf");
+            FileUtils.copyInputStreamToFile(in, file);
+            
+            response = Response.status(Response.Status.OK)
+                .build();
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        return response;
+    }
 
     public Response getMetaData(Map<String, InputStream> paramMap) throws IOException {
         LOGGER.debug(methodLogIn());
@@ -260,7 +280,7 @@ public class GrobidRestProcessFiles {
                         .pdfAssetPath(new File(assetPath))
                         .build();
 
-                BiblioItem result = new BiblioItem();
+                BiblioItem result;
 
                 doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
 
@@ -273,7 +293,7 @@ public class GrobidRestProcessFiles {
                     metaVO.setTitle(result.getTitle());
                 }
                 if(result.getEnglishTitle() != null){
-                    metaVO.setTitle_en(result.getEnglishTitle());
+                    metaVO.setTitle(result.getEnglishTitle());
                 }
                 if(result.getAbstract() != null){
                     metaVO.setAbstract(result.getAbstract());
@@ -282,7 +302,7 @@ public class GrobidRestProcessFiles {
                     metaVO.setAuthor(result.getFullAuthors());
                 }
                 if(result.getKeywords() != null){
-                    metaVO.setKeyword(result.getKeywords());
+                    metaVO.setKeywords(result.getKeywords());
                 }
                 metaVO.setDoi(result.getDOI());
                 if(result.getSubmission() != null){
