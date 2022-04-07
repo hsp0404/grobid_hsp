@@ -131,7 +131,9 @@ public class BiblVO {
     }
 
     public void setPageRange(String pageRange) {
-        this.pageRange = pageRange;
+        if (pageRange != null) {
+            this.pageRange = pageRange.replaceAll("--", "-");
+        }
     }
 
     public String getJournalTitle() {
