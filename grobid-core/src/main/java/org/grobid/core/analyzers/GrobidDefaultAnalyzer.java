@@ -76,27 +76,28 @@ public class GrobidDefaultAnalyzer implements Analyzer {
         text = UnicodeUtil.normaliseText(text);
         StringTokenizer st = new StringTokenizer(text, delimiters, true);
         Lexicon lexicon = Lexicon.getInstance();
+        
         while (st.hasMoreTokens()) {
-            String tok = st.nextToken();
-            if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
-                if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
-                    result.add(tok.substring(0, 1));
-                    result.add(" ");
-                    result.add(tok.substring(1));
-                } else {
-                    result.add(tok);
-                }
-            } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-                if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
-                    result.add(tok.substring(0, 2));
-                    result.add(" ");
-                    result.add(tok.substring(2));
-                } else {
-                    result.add(tok);
-                }
-            } else {
-                result.add(tok);
-            }
+
+//            if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
+//                if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
+//                    result.add(tok.substring(0, 1));
+//                    result.add(" ");
+//                    result.add(tok.substring(1));
+//                } else {
+//                    result.add(tok);
+//                }
+//            } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+//                if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
+//                    result.add(tok.substring(0, 2));
+//                    result.add(" ");
+//                    result.add(tok.substring(2));
+//                } else {
+//                    result.add(tok);
+//                }
+//            } else {
+//            }
+            result.add(st.nextToken());
         }
         return result;
     }
