@@ -14,23 +14,34 @@
 package org.grobid.service.tests;
 
 import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import com.squarespace.jersey2.guice.JerseyGuiceUtils;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
+import org.grobid.core.meta.AuthorVO;
+import org.grobid.core.meta.MetaVO;
 import org.grobid.core.utilities.GrobidProperties;
 import org.grobid.service.GrobidPaths;
 import org.grobid.service.GrobidRestService;
 import org.grobid.service.GrobidServiceConfiguration;
 import org.grobid.service.main.GrobidServiceApplication;
 import org.grobid.service.module.GrobidServiceModuleTest;
+import org.grobid.service.process.GrobidRestProcessFiles;
 import org.grobid.service.util.BibTexMediaType;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -39,9 +50,25 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.junit.Assert.*;
 
 /**
@@ -53,6 +80,8 @@ import static org.junit.Assert.*;
  */
 public class GrobidRestServiceTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrobidRestServiceTest.class);
+    @Inject
+    private GrobidRestProcessFiles restProcessFiles;
 
     @BeforeClass
     public static void setInitialContext() throws Exception {
@@ -290,6 +319,319 @@ public class GrobidRestServiceTest {
                 "}\n",
             response.readEntity(String.class));
     }
+
+    @Test
+    public void testFile() throws IOException, ParseException {
+        Reader reader = new FileReader("/Users/hs/Desktop/jsonResult.txt");
+
+        JSONParser parser = new JSONParser();
+        Object obj = parser.parse(reader);
+
+        JSONArray jsonArr_ = (JSONArray) obj;
+
+        JSONArray jsonArr = new JSONArray();
+
+        Random rand = new Random();
+
+        File[] files = new File("/Users/hs/Desktop/pdfs/").listFiles();
+
+        for (int i = 0; i < 50; i++) {
+            int i1 = rand.nextInt(13892);
+//            int i1 = rand.nextInt(files.length);
+
+            JSONObject j = (JSONObject) jsonArr_.get(i1);
+            JSONObject titleObj = (JSONObject) j.get("title");
+            String enTitle = (String) titleObj.get("en");
+            String koTitle = (String) titleObj.get("ko");
+
+            JSONObject abstractObj = (JSONObject) j.get("abstract");
+            String enAbstract = (String) abstractObj.get("en");
+            String koAbstract = (String) abstractObj.get("ko");
+
+//            JSONObject keywordObj = (JSONObject) j.get("keyword");
+//            String enKeyword = (String) keywordObj.get("en");
+//            String koKeyword = (String) keywordObj.get("ko");
+
+            String authors = (String) j.get("authors");
+            String docId = (String) j.get("doc_id");
+
+            File file = new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf");
+            
+            while ((enTitle == null && koTitle == null) || (enAbstract == null && koAbstract == null) || authors == null) {
+//            while ((enTitle != null || koTitle != null) && (enAbstract != null || koAbstract != null) && authors != null && !file.exists()) {
+                i1 = rand.nextInt(13892);
+//                i1 = rand.nextInt(files.length);
+                j = (JSONObject) jsonArr_.get(i1);
+                titleObj = (JSONObject) j.get("title");
+                enTitle = (String) titleObj.get("en");
+                koTitle = (String) titleObj.get("ko");
+                docId = (String) j.get("doc_id");
+
+
+                abstractObj = (JSONObject) j.get("abstract");
+                enAbstract = (String) titleObj.get("en");
+                koAbstract = (String) titleObj.get("ko");
+
+                file = new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf");
+
+//                keywordObj = (JSONObject) j.get("keyword");
+//                enKeyword = (String) titleObj.get("en");
+//                koKeyword = (String) titleObj.get("ko");
+
+                authors = (String) j.get("authors");
+            }
+
+            jsonArr.add(j);
+        }
+
+        String doc_id = "";
+        
+        HashMap<JSONObject, Map<String, String>> titleMap = new HashMap<>();
+        HashMap<JSONObject, Map<String, String>> abstractMap = new HashMap<>();
+        HashMap<String, String> authorsMap = new HashMap<>();
+
+        for (Object o : jsonArr) {
+            JSONObject jsonObj = (JSONObject) o;
+            doc_id = (String) jsonObj.get("doc_id");
+            LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+            ArrayList<MetaVO> res_ = new ArrayList<>();
+
+            File pdfFile = new File("/Users/hs/Desktop/pdfs/" + doc_id + ".pdf");
+            if (pdfFile.exists()) {
+                System.out.println("exist");
+                paramMap.put(doc_id, new FileInputStream(pdfFile));
+                Object response = restProcessFiles.getMetaData(paramMap).getEntity();
+                if (response instanceof List) {
+                    res_ = (ArrayList<MetaVO>) response;
+                } else{
+                    continue;
+                }
+            }else{
+                try (BufferedInputStream in = new BufferedInputStream(new URL("https://www.koreascience.or.kr/article/" + doc_id + ".pdf").openStream())) {
+                    System.out.println("non exist.. save..");
+                    FileUtils.copyInputStreamToFile(in, pdfFile);
+                    paramMap.put(doc_id, new FileInputStream(pdfFile));
+                    Object response = restProcessFiles.getMetaData(paramMap).getEntity();
+                    if (response instanceof List) {
+                        res_ = (ArrayList<MetaVO>) response;
+                    } else{
+                        continue;
+                    }
+                }
+            }
+            MetaVO res = res_.get(0);
+            
+            JSONObject titleObj = (JSONObject) jsonObj.get("title");
+            titleObj.put("doc_id", doc_id);
+            JSONObject abstractObj = (JSONObject) jsonObj.get("abstract");
+            String authorsObj = (String) jsonObj.get("authors");
+            
+            String title_ko = res.getTitle_ko();
+            String title_en = res.getTitle_en();
+            String abstract_ko = res.getAbstract_ko();
+            String abstract_en = res.getAbstract_en();
+            List<AuthorVO> authors = res.getAuthors();
+            StringBuilder sb = new StringBuilder();
+            if (authorsObj.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                for (AuthorVO author : authors) {
+                    sb.append(author.getName_kr());
+                }
+            } else{
+                for (AuthorVO author : authors) {
+                    sb.append(author.getName_en());
+                }
+                String[] split = authorsObj.split(";");
+                StringBuilder sbb = new StringBuilder();
+                for (String s : split) {
+                    String[] s1 = s.split(" ");
+                    List<String> strings = Arrays.asList(s1);
+                    Collections.reverse(strings);
+                    for (String string : strings) {
+                        sbb.append(string);
+                    }
+                }
+                authorsObj = sbb.toString();
+            }
+            authorsMap.put(authorsObj, sb.toString().replaceAll("null", ""));
+
+            HashMap<String, String> respTitleMap = new HashMap<>();
+            HashMap<String, String> respAbstractMap = new HashMap<>();
+            respTitleMap.put("ko", title_ko);
+            respTitleMap.put("en", title_en);
+            respAbstractMap.put("ko", abstract_ko);
+            respAbstractMap.put("en", abstract_en);
+
+            titleMap.put(titleObj, respTitleMap);
+            abstractMap.put(abstractObj, respAbstractMap);
+        }
+        System.out.println("----------------TITLE------------------");
+        System.out.println(compare(titleMap, false));
+        System.out.println("----------------ABSTRACT------------------");
+        System.out.println(compare(abstractMap, false));
+        System.out.println("----------------AUTHORS------------------");
+        System.out.println(compareOneLang(authorsMap));
+    }
+    
+    private static double compare(HashMap<JSONObject, Map<String,String>> map, Boolean copy) {
+        int i = 0;
+        int n = 0;
+        int similarity = 0;
+        for (Map.Entry<JSONObject, Map<String, String>> entry : map.entrySet()) {
+            JSONObject jsonObject = entry.getKey();
+            Map<String, String> target = entry.getValue();
+
+            String koReal = (String) jsonObject.get("ko");
+            String enReal = (String) jsonObject.get("en");
+            String docId = (String) jsonObject.get("doc_id");
+
+            String koTarget = target.get("ko") == null ? "" : target.get("ko");
+            String enTarget = target.get("en") == null ? "" : target.get("en");
+
+            if (koReal != null) {
+                n++;
+                if (clean(koReal).equalsIgnoreCase(clean(koTarget))) {
+                    i++;
+                } else if (ratcliffObershelpDistance(clean(koReal), clean(koTarget), false) > 0.95) {
+                    similarity++;
+                } else {
+                    if(copy){
+                        try {
+                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("------------error case(kr)------------");
+                    System.out.println("expected        : " + koReal);
+                    System.out.println("expected(clean) : " + clean(koReal));
+                    System.out.println("result          : " + koTarget);
+                    System.out.println("result(clean)   : " + clean(koTarget));
+                }
+            }
+            if (enReal != null) {
+                n++;
+                if (clean(enReal).equalsIgnoreCase(clean(enTarget))){
+                    i++;
+                } else if (ratcliffObershelpDistance(clean(enReal), clean(enTarget), false) > 0.95) {
+                    similarity++;
+                } else{
+                    if (copy) {
+                        try {
+                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    System.out.println("------------error case(en)------------");
+                    System.out.println("expected        : " + enReal);
+                    System.out.println("expected(clean) : " + clean(enReal));
+                    System.out.println("result          : " + enTarget);
+                    System.out.println("result(clean)   : " + clean(enTarget));
+                }
+            }
+        }
+        System.out.println(n+"개 중, " +i+"개 일치합니다.");
+        System.out.println(n+"개 중, " +similarity+"개는 95% 이상의 유사도를 가지고 있습니다.");
+        System.out.println(n+"개 중, " +(n-i-similarity)+"개가 틀렸습니다.");
+        
+        return ((i+similarity)*100.0)/n;
+    }
+
+    private static double compareOneLang(Map<String, String> map) {
+        int i = 0;
+        int n = 0;
+        int similarity = 0;
+
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String real = entry.getKey();
+            String target = entry.getValue();
+            if (real != null) {
+                n++;
+                if (clean(real).equalsIgnoreCase(clean(target))) {
+                    i++;
+                } else if (ratcliffObershelpDistance(clean(real), clean(target), false) > 0.95) {
+                    similarity++;
+                } else {
+                    System.out.println("------------error case(kr)------------");
+                    System.out.println("expected        : " + real);
+                    System.out.println("expected(clean) : " + clean(real));
+                    System.out.println("result          : " + target);
+                    System.out.println("result(clean)   : " + clean(target));
+                }
+            }
+        }
+        
+        System.out.println(n+"개 중, " +i+"개 일치합니다.");
+        System.out.println(n+"개 중, " +similarity+"개는 95% 이상의 유사도를 가지고 있습니다.");
+        System.out.println(n+"개 중, " +(n-i-similarity)+"개가 틀렸습니다.");
+
+        return ((i+similarity)*100.0)/n;
+    }
+    
+    private static String clean(String str){
+        if (str == null) {
+            return "";
+        }
+        if (str.matches("\\{\\\\[a-zA-Z]+\\}")) {
+            str = str.replaceAll("\\{\\\\[a-zA-Z]+\\}", "");
+        }
+//        str = str.replaceAll("\\$sim\\$", "~");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+//            if (String.valueOf(str.charAt(i)).matches("[^\\(\\（\\[\\ \\⋅\\ㆍ\\•\\･\\*\\,\\:\\;\\?\\.\\․\\!\\/\\)\\）\\-\\−\\–\\‐\\«\\»\\„\\\"\\“\\”\\‘\\’\\'\\`\\$\\#\\@\\]\\*\\♦\\♥\\♣\\♠]")) {
+            if (String.valueOf(str.charAt(i)).matches("[a-zA-Z0-9가-힇ㄱ-ㅎㅏ-ㅣぁ-ゔァ-ヴー々〆〤一-龥]")) {
+                sb.append(str.charAt(i));
+            }
+        }
+        return sb.toString();
+    }
+
+
+    private static double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
+        if ( StringUtils.isBlank(string1) || StringUtils.isBlank(string2) )
+            return 0.0;
+        Double similarity = 0.0;
+        if (!caseDependent) {
+            string1 = string1.toLowerCase();
+            string2 = string2.toLowerCase();
+        }
+        if (string1.equals(string2)) {
+            similarity = 1.0;
+        }
+
+        if ( isNotEmpty(string1) && isNotEmpty(string2) ) {
+            Option<Object> similarityObject =
+                RatcliffObershelpMetric.compare(string1, string2);
+            if (similarityObject.isDefined()) {
+                similarity = (Double) similarityObject.get();
+            }
+        }
+
+        return similarity;
+    }
+    
+    @Test
+    public void train(){
+        restProcessFiles.trainPdf();
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     @Ignore
     public void processStatelessReferencesDocumentReturnsValidBibTeXForKolbAndKopp() throws Exception {
