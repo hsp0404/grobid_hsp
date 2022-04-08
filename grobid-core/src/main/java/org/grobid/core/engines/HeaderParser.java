@@ -101,7 +101,7 @@ public class HeaderParser extends AbstractParser {
 //                List<LayoutToken> tokenizationsHeader = Document.getTokenizationParts(documentHeaderParts, tokenizations);
 
                 //String header = getSectionHeaderFeatured(doc, documentHeaderParts, true);
-                Pair<String, List<LayoutToken>> featuredHeader = getSectionHeaderFeatured(doc, documentHeaderParts);
+                Pair<String, List<LayoutToken>> featuredHeader = getSectionHeaderFeatured(doc, documentHeaderParts, false);
                 String header = featuredHeader.getLeft();
                 List<LayoutToken> headerTokenization = featuredHeader.getRight();
                 String res = null;
@@ -365,7 +365,7 @@ public class HeaderParser extends AbstractParser {
      * Return the header section with features to be processed by the sequence labelling model
      */
     public Pair<String, List<LayoutToken>> getSectionHeaderFeatured(Document doc,
-                                           SortedSet<DocumentPiece> documentHeaderParts) {
+                                           SortedSet<DocumentPiece> documentHeaderParts, Boolean isTrain) {
         FeatureFactory featureFactory = FeatureFactory.getInstance();
         StringBuilder header = new StringBuilder();
         String currentFont = null;
@@ -406,30 +406,32 @@ public class HeaderParser extends AbstractParser {
                 if ((tokens == null) || (tokens.size() == 0)) {
                     continue;
                 }
-                Lexicon lexicon = Lexicon.getInstance();
+                if (!isTrain) {
+                    Lexicon lexicon = Lexicon.getInstance();
 
-                for (int i = 0; i < tokens.size(); i++) {
-                    LayoutToken t = tokens.get(i);
-                    String tok = t.getText();
-                    if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
-                        if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
-                             LayoutToken temp = new LayoutToken(t);
-                            temp.setText(tok.substring(0, 1));
-                            temp.setWidth(temp.getWidth()/3);
-                            t.setText(tok.substring(1));
-                            t.setX(t.getX() + (t.getWidth() / 3));
-                            t.setWidth((t.getWidth() / 3)*2);
-                            tokens.add(i, temp);
-                        } 
-                    } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-                        if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
-                            LayoutToken temp = new LayoutToken(t);
-                            temp.setText(tok.substring(0, 2));
-                            temp.setWidth(temp.getWidth()/4);
-                            t.setText(tok.substring(2));
-                            t.setX(t.getX() + (t.getWidth() / 4));
-                            t.setWidth((t.getWidth() / 2));
-                            tokens.add(i, temp);
+                    for (int i = 0; i < tokens.size(); i++) {
+                        LayoutToken t = tokens.get(i);
+                        String tok = t.getText();
+                        if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
+                            if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
+                                LayoutToken temp = new LayoutToken(t);
+                                temp.setText(tok.substring(0, 1));
+                                temp.setWidth(temp.getWidth()/3);
+                                t.setText(tok.substring(1));
+                                t.setX(t.getX() + (t.getWidth() / 3));
+                                t.setWidth((t.getWidth() / 3)*2);
+                                tokens.add(i, temp);
+                            }
+                        } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                            if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
+                                LayoutToken temp = new LayoutToken(t);
+                                temp.setText(tok.substring(0, 2));
+                                temp.setWidth(temp.getWidth()/4);
+                                t.setText(tok.substring(2));
+                                t.setX(t.getX() + (t.getWidth() / 4));
+                                t.setWidth((t.getWidth() / 2));
+                                tokens.add(i, temp);
+                            }
                         }
                     }
                 }
@@ -1240,6 +1242,9 @@ public class HeaderParser extends AbstractParser {
                         if (tokOriginal.equals(" ")
                                 || tokOriginal.equals("\u00A0")) {
                             addSpace = true;
+                            if (s.equals("신경외과학교실")) {
+                                System.out.println("dd");
+                            }
                         } else if (tokOriginal.equals(s)) {
                             strop = true;
                         }

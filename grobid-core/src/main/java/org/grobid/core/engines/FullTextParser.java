@@ -1350,7 +1350,7 @@ public class FullTextParser extends AbstractParser {
                         headerTokenizations.add(tokenizationsFull.get(i));
                     }
                 }
-                Pair<String, List<LayoutToken>> featuredHeader = parsers.getHeaderParser().getSectionHeaderFeatured(doc, documentHeaderParts);
+                Pair<String, List<LayoutToken>> featuredHeader = parsers.getHeaderParser().getSectionHeaderFeatured(doc, documentHeaderParts, true);
                 String header = featuredHeader.getLeft();
 
                 if ((header != null) && (header.trim().length() > 0)) {
