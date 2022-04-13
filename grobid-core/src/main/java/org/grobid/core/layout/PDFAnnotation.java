@@ -148,6 +148,7 @@ public class PDFAnnotation {
         BoundingBox intersectBox = null;
         int pageToken = token.getPage();
         if (pageToken == pageNumber) {
+            token.setWidth(token.getWidth()+5);
             BoundingBox tokenBox = BoundingBox.fromLayoutToken(token);
             for(BoundingBox box : boundingBoxes) {
                 if (box.intersect(tokenBox)) {

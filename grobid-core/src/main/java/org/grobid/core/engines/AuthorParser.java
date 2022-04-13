@@ -133,7 +133,8 @@ public class AuthorParser {
                                         Matcher orcidMatcher = TextUtilities.ORCIDPattern.matcher(pdfAnnotation.getDestination());
                                         if (orcidMatcher.find()) {
                                             // !! here we consider the annot is at the tail or end of the names
-                                            String newToken = authorsToken.getText().substring(0, authorsToken.getText().length() - charsCovered);        
+                                            String newToken = authorsToken.getText().substring(0, authorsToken.getText().length());        
+//                                            String newToken = authorsToken.getText().substring(0, authorsToken.getText().length() - charsCovered);        
                                             aut.setORCID(orcidMatcher.group(1) + "-"
                                                 + orcidMatcher.group(2) + "-" + orcidMatcher.group(3)+ "-" + orcidMatcher.group(4));
                                             authorsToken.setText(newToken);
