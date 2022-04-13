@@ -136,7 +136,7 @@ public class MetaVO {
     public void setKeywords(List<Keyword> keywords) {
         for (Keyword keyword : keywords) {
             String k = keyword.getKeyword();
-            if (k != null && k.equals("")) {
+            if (k != null && !k.equals("")) {
                 this.keywords.add(k);
             }
         }
