@@ -117,7 +117,7 @@ public class MetaVO {
     }
 
     public void setAbstract(String abstract_){
-        String[] split = abstract_.split(" //lang// ");
+        String[] split = abstract_.split("//lang//");
         for (String abstract__ : split) {
             Language lang = detect(abstract__);
             if (lang.name().equals("ENGLISH")) {

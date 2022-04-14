@@ -863,7 +863,9 @@ public class HeaderParser extends AbstractParser {
                 if (biblio.getTitle() == null) {
                     biblio.setTitle(clusterContent);
                 }else{
-                    biblio.setTitle(biblio.getTitle() + "//lang//" + clusterContent);
+                    if (!clusterContent.equals(biblio.getTitle())) {
+                        biblio.setTitle(biblio.getTitle() + "//lang//" + clusterContent);
+                    }
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_AUTHOR)) {
                 //if (biblio.getAuthors() != null && isDifferentandNotIncludedContent(biblio.getAuthors(), clusterContent)) {
@@ -967,7 +969,7 @@ public class HeaderParser extends AbstractParser {
                 if (biblio.getAbstract() != null) {
                     // this will need to be reviewed with more training data, for the moment
                     // avoid concatenation for abstracts as it brings more noise than correct pieces
-                    biblio.setAbstract(biblio.getAbstract() + " //lang// " + clusterContent);
+                    biblio.setAbstract(biblio.getAbstract() + "//lang//" + clusterContent);
                 } else {
                     biblio.setAbstract(clusterContent);
                     List<LayoutToken> tokens = cluster.concatTokens();
