@@ -50,10 +50,10 @@ public class Person {
             lang = "kr";
         } else if(f.matches(".*[a-zA-Z]+.*")){
             lang = "en";
-            firstName = f;
+            firstName = f.trim();
         } else{
             lang = "etc";
-            firstName = f;
+            firstName = f.trim();
         }
     }
 
@@ -75,10 +75,10 @@ public class Person {
             lastName = f;
         } else if(f.matches(".*[a-zA-Z]+.*")){
             lang = "en";
-            lastName = f;
+            lastName = f.trim();
         } else{
             lang = "etc";
-            lastName = f;
+            lastName = f.trim();
         }
     }
 
