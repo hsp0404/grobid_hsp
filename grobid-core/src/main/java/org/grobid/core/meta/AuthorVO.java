@@ -19,7 +19,7 @@ public class AuthorVO implements Comparable<AuthorVO> {
     private int order;
 
     public AuthorVO(Person person) {
-        String lang = person.getLang();
+        String lang = person.getLang() == null ? "en" : person.getLang();
         StringBuilder sb = new StringBuilder();
         if (lang.equals("en")) {
             sb.append(person.getFirstName());
@@ -86,14 +86,14 @@ public class AuthorVO implements Comparable<AuthorVO> {
 
         if (koAff != null) {
             for (Affiliation affiliation : koAff) {
-                if (affiliation.getInstitutions() != null || affiliation.getDepartments() != null) {
+                if (affiliation.getRawAffiliationString() != null) {
                     affiliationVOS.add(new AffiliationVO(affiliation));
                 }
             }
         }
         if (enAff != null) {
             for (Affiliation affiliation : enAff) {
-                if (affiliation.getInstitutions() != null || affiliation.getDepartments() != null) {
+                if (affiliation.getRawAffiliationString() != null) {
                     affiliationVOS.add(new AffiliationVO(affiliation));
                 }
             }

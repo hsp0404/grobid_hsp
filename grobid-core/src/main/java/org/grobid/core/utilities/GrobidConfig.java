@@ -46,6 +46,11 @@ public class GrobidConfig {
         public String service;
         public HostParameters glutton;
         public CrossrefParameters crossref;
+        public AccessonParameters accesson;
+    }
+    
+    public static class AccessonParameters {
+        public String key;
     }
 
     public static class CrossrefParameters {

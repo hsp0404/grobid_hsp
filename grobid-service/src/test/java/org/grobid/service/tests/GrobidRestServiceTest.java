@@ -53,6 +53,7 @@ import javax.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -67,6 +68,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.junit.Assert.*;
@@ -319,10 +321,15 @@ public class GrobidRestServiceTest {
                 "}\n",
             response.readEntity(String.class));
     }
-
-    @Test
-    public void testFile() throws IOException, ParseException {
-        Reader reader = new FileReader("/Users/hs/Desktop/jsonResult.txt");
+    
+    public Map<String, Double> testFile(int size, boolean save, boolean copy) throws IOException, ParseException {
+        Random rand = new Random();
+        Integer consolidated = 0;
+        
+        int resultNumber = rand.nextInt(48);
+        System.out.println("jsonResult-test"+resultNumber+".txt 파일을 불러옵니다");
+        
+        Reader reader = new FileReader("/Users/hs/Desktop/json-separate/jsonResult-test"+resultNumber+".txt");
 
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(reader);
@@ -331,12 +338,17 @@ public class GrobidRestServiceTest {
 
         JSONArray jsonArr = new JSONArray();
 
-        Random rand = new Random();
+        // 로컬에 저장할 것인지
+//        Boolean save = false;
+        // TrainTmp에 저장할 것인지
+//        Boolean copy = false;
+//        int size = 50;
+
 
         File[] files = new File("/Users/hs/Desktop/pdfs/").listFiles();
 
-        for (int i = 0; i < 50; i++) {
-            int i1 = rand.nextInt(13892);
+        for (int i = 0; i < size; i++) {
+            int i1 = rand.nextInt(10000);
 //            int i1 = rand.nextInt(files.length);
 
             JSONObject j = (JSONObject) jsonArr_.get(i1);
@@ -359,7 +371,7 @@ public class GrobidRestServiceTest {
             
             while ((enTitle == null && koTitle == null) || (enAbstract == null && koAbstract == null) || authors == null) {
 //            while ((enTitle != null || koTitle != null) && (enAbstract != null || koAbstract != null) && authors != null && !file.exists()) {
-                i1 = rand.nextInt(13892);
+                i1 = rand.nextInt(10000);
 //                i1 = rand.nextInt(files.length);
                 j = (JSONObject) jsonArr_.get(i1);
                 titleObj = (JSONObject) j.get("title");
@@ -388,8 +400,11 @@ public class GrobidRestServiceTest {
         
         HashMap<JSONObject, Map<String, String>> titleMap = new HashMap<>();
         HashMap<JSONObject, Map<String, String>> abstractMap = new HashMap<>();
+        HashMap<JSONObject, Map<String, String>> keywordMap = new HashMap<>();
         HashMap<String, String> authorsMap = new HashMap<>();
-
+        
+        int index = 1;
+        
         for (Object o : jsonArr) {
             JSONObject jsonObj = (JSONObject) o;
             doc_id = (String) jsonObj.get("doc_id");
@@ -400,7 +415,7 @@ public class GrobidRestServiceTest {
             if (pdfFile.exists()) {
                 System.out.println("exist");
                 paramMap.put(doc_id, new FileInputStream(pdfFile));
-                Object response = restProcessFiles.getMetaData(paramMap).getEntity();
+                Object response = restProcessFiles.getMetaData(paramMap, 1).getEntity();
                 if (response instanceof List) {
                     res_ = (ArrayList<MetaVO>) response;
                 } else{
@@ -408,28 +423,56 @@ public class GrobidRestServiceTest {
                 }
             }else{
                 try (BufferedInputStream in = new BufferedInputStream(new URL("https://www.koreascience.or.kr/article/" + doc_id + ".pdf").openStream())) {
-                    System.out.println("non exist.. save..");
-                    FileUtils.copyInputStreamToFile(in, pdfFile);
-                    paramMap.put(doc_id, new FileInputStream(pdfFile));
-                    Object response = restProcessFiles.getMetaData(paramMap).getEntity();
+                    if(save){
+                        System.out.println("non existing.. save..");
+                        FileUtils.copyInputStreamToFile(in, pdfFile);
+                        paramMap.put(doc_id, new FileInputStream(pdfFile));
+                    } else{
+                        System.out.println("non existing.. but not save");
+                        paramMap.put(doc_id, in);
+                    }
+                    Object response = restProcessFiles.getMetaData(paramMap, 1).getEntity();
                     if (response instanceof List) {
                         res_ = (ArrayList<MetaVO>) response;
                     } else{
                         continue;
                     }
+                } catch (FileNotFoundException e){
+                    System.out.println("파일이 없습니다.");
+                    continue;
                 }
             }
             MetaVO res = res_.get(0);
+            if (res.isConsolidated()) {
+                consolidated++;
+            }
+            System.out.println(index++ + " / " + size);
             
             JSONObject titleObj = (JSONObject) jsonObj.get("title");
             titleObj.put("doc_id", doc_id);
             JSONObject abstractObj = (JSONObject) jsonObj.get("abstract");
+            abstractObj.put("doc_id", doc_id);
             String authorsObj = (String) jsonObj.get("authors");
+            JSONObject keywordObj = (JSONObject) jsonObj.get("keywords");
+            
             
             String title_ko = res.getTitle_ko();
             String title_en = res.getTitle_en();
             String abstract_ko = res.getAbstract_ko();
             String abstract_en = res.getAbstract_en();
+            List<String> keywords = res.getKeywords();
+            StringBuilder keyword_ko = new StringBuilder();
+            StringBuilder keyword_en = new StringBuilder();
+            for (String keyword : keywords) {
+                if (keyword.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                    keyword_ko.append(keyword);
+                    keyword_ko.append(";");
+                } else{
+                    keyword_en.append(keyword);
+                    keyword_en.append(";");
+                }
+            }
+            
             List<AuthorVO> authors = res.getAuthors();
             StringBuilder sb = new StringBuilder();
             if (authorsObj.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
@@ -456,21 +499,71 @@ public class GrobidRestServiceTest {
 
             HashMap<String, String> respTitleMap = new HashMap<>();
             HashMap<String, String> respAbstractMap = new HashMap<>();
+            HashMap<String, String> respKeywordMap = new HashMap<>();
             respTitleMap.put("ko", title_ko);
             respTitleMap.put("en", title_en);
             respAbstractMap.put("ko", abstract_ko);
             respAbstractMap.put("en", abstract_en);
+            respKeywordMap.put("ko", keyword_ko.toString());
+            respKeywordMap.put("en", keyword_en.toString());
 
             titleMap.put(titleObj, respTitleMap);
             abstractMap.put(abstractObj, respAbstractMap);
+            keywordMap.put(keywordObj, respKeywordMap);
         }
+        HashMap<String, Double> result = new HashMap<>();
         System.out.println("----------------TITLE------------------");
-        System.out.println(compare(titleMap, false));
+        double titleCompare = compare(titleMap, copy);
+        System.out.println(titleCompare);
+        result.put("title", titleCompare);
         System.out.println("----------------ABSTRACT------------------");
-        System.out.println(compare(abstractMap, false));
+        double abstractCompare = compare(abstractMap, copy);
+        System.out.println(abstractCompare);
+        result.put("abstract", abstractCompare);
         System.out.println("----------------AUTHORS------------------");
-        System.out.println(compareOneLang(authorsMap));
+        double authorCompare = compareOneLang(authorsMap);
+        System.out.println(authorCompare);
+        result.put("author", authorCompare);
+        System.out.println("----------------KEYWORD------------------");
+        double keywordCompare = compare(keywordMap, copy);
+        System.out.println(keywordCompare);
+        result.put("keyword", keywordCompare);
+        result.put("consolidated", Double.valueOf(consolidated));
+        
+        return result;
+        
+
     }
+    
+    @Test
+    public void realTest() throws IOException, ParseException {
+        double titleAvg = 0;
+        double abstractAvg = 0;
+        double authorAvg = 0;
+        double keywordAvg = 0;
+        int consolidatedAvg = 0;
+        
+        int iter = 10;
+        int size = 10;
+        
+        for (int i = 0; i < iter; i++) {
+            System.out.println((i+1) + " / " + iter);
+            Map<String, Double> result = testFile(size, false, false);
+            titleAvg += result.get("title");
+            abstractAvg += result.get("abstract");
+            authorAvg += result.get("author");
+            keywordAvg += result.get("keyword");
+            consolidatedAvg += result.get("consolidated");
+        }
+
+        System.out.println(size + "개 " + iter + "회 반복 결과");
+        System.out.println("title       : " + titleAvg / iter);
+        System.out.println("abstract    : " + abstractAvg / iter);
+        System.out.println("author      : " + authorAvg / iter);
+        System.out.println("keyword     : " + keywordAvg / iter);
+        System.out.println("consolidated: " + consolidatedAvg);
+    }
+    
     
     private static double compare(HashMap<JSONObject, Map<String,String>> map, Boolean copy) {
         int i = 0;
@@ -496,7 +589,10 @@ public class GrobidRestServiceTest {
                 } else {
                     if(copy){
                         try {
-                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                            if (koTarget == null || koTarget.equals("")) {
+                                System.out.println(docId + ".pdf .. 불일치하여 trainTmp 폴더에 저장합니다");
+                                FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -517,7 +613,10 @@ public class GrobidRestServiceTest {
                 } else{
                     if (copy) {
                         try {
-                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                            if (enTarget == null | enTarget.equals("")) {
+                                System.out.println(docId + ".pdf .. 불일치하여 trainTmp 폴더에 저장합니다");
+                                FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -527,6 +626,7 @@ public class GrobidRestServiceTest {
                     System.out.println("expected(clean) : " + clean(enReal));
                     System.out.println("result          : " + enTarget);
                     System.out.println("result(clean)   : " + clean(enTarget));
+//                    new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf").delete();
                 }
             }
         }
@@ -613,6 +713,16 @@ public class GrobidRestServiceTest {
     @Test
     public void train(){
         restProcessFiles.trainPdf();
+        File file = new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/trainData");
+        File[] files = file.listFiles();
+        for (File f : files) {
+            if (StringUtils.endsWith(f.getName(), "header") || StringUtils.endsWith(f.getName(), "header.tei.xml")
+                || StringUtils.endsWith(f.getName(), "segmentation") || StringUtils.endsWith(f.getName(), "segmentation.tei.xml")) {
+                
+            } else{
+                f.delete();
+            }
+        }
     }
     
     

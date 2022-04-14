@@ -3,11 +3,12 @@ package org.grobid.core.utilities;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.grobid.core.data.BibDataSet;
 import org.grobid.core.data.BiblioItem;
+import org.grobid.core.utilities.accesson.AccessonWorkDeserializer;
 import org.grobid.core.utilities.counters.CntManager;
 import org.grobid.core.utilities.crossref.CrossrefClient;
+import org.grobid.core.utilities.crossref.CrossrefDeserializer;
 import org.grobid.core.utilities.crossref.CrossrefRequestListener;
 import org.grobid.core.utilities.crossref.WorkDeserializer;
 import org.grobid.core.utilities.glutton.GluttonClient;
@@ -37,13 +38,16 @@ public class Consolidation {
 
     public enum GrobidConsolidationService {
         CROSSREF("crossref"),
-        GLUTTON("glutton");
+        GLUTTON("glutton"),
+        ACCESSON("accesson");
 
         private final String ext;
 
         GrobidConsolidationService(String ext) {
             this.ext = ext;
         }
+        
+        
 
         public String getExt() {
             return ext;
@@ -88,7 +92,11 @@ public class Consolidation {
             client = GluttonClient.getInstance();
         else
             client = CrossrefClient.getInstance();
-        workDeserializer = new WorkDeserializer();
+        
+        if (GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.CROSSREF)
+            workDeserializer = new WorkDeserializer();
+        else
+            workDeserializer = new AccessonWorkDeserializer();
     }
 
     public void setCntManager(CntManager cntManager) {
@@ -117,7 +125,7 @@ public class Consolidation {
 
         String theDOI = bib.getDOI();
         if (StringUtils.isNotBlank(theDOI)) {
-            theDOI = cleanDOI(theDOI);
+            theDOI = cleanDOI(theDOI).toLowerCase();
         }
         final String doi = theDOI;
         String aut = bib.getFirstAuthorSurname();
@@ -244,39 +252,41 @@ public class Consolidation {
             } else {
                 doiQuery = false;
             }
-
+            
             client.pushRequest("works", arguments, workDeserializer, threadId, new CrossrefRequestListener<BiblioItem>(0) {
-
+                
                 @Override
                 public void onSuccess(List<BiblioItem> res) {
-                    if ((res != null) && (res.size() > 0) ) {
+                    if ((res != null) && (res.size() > 0)) {
                         // we need here to post-check that the found item corresponds
                         // correctly to the one requested in order to avoid false positive
-                        for(BiblioItem oneRes : res) {
-                            /* 
-                              Glutton integrates its own post-validation, so we can skip post-validation in GROBID when it is used as 
-                              consolidation service - except in specific case where the DOI is failing and the consolidation is based on 
-                              extracted title and author.  
+                        for (BiblioItem oneRes : res) {
+                        /* 
+                          Glutton integrates its own post-validation, so we can skip post-validation in GROBID when it is used as 
+                          consolidation service - except in specific case where the DOI is failing and the consolidation is based on 
+                          extracted title and author.  
 
-                              In case of crossref REST API, for single bib. ref. consolidation (this case comes only for header extraction), 
-                              having an extracted DOI matching is considered safe enough, and we don't require further post-validation.
+                          In case of crossref REST API, for single bib. ref. consolidation (this case comes only for header extraction), 
+                          having an extracted DOI matching is considered safe enough, and we don't require further post-validation.
 
-                              For all the other case of matching with CrossRef, we require a post-validation. 
-                            */
+                          For all the other case of matching with CrossRef, we require a post-validation. 
+                        */
                             if (
-                                ( (GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.GLUTTON) &&
+                                ((GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.GLUTTON) &&
                                     !doiQuery
                                 )
-                                ||
-                                ( (GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.GLUTTON) &&
-                                    StringUtils.isNotBlank(oneRes.getDOI()) &&
-                                    doi.equals(oneRes.getDOI())
-                                )
-                                ||
-                                ( (GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.CROSSREF) &&
-                                  (doiQuery) )
-                                ||
-                                postValidation(bib, oneRes)) {
+                                    ||
+                                    ((GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.GLUTTON) &&
+                                        StringUtils.isNotBlank(oneRes.getDOI()) &&
+                                        doi.equals(oneRes.getDOI())
+                                    )
+                                    ||
+                                    ((GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.CROSSREF) &&
+                                        (doiQuery))
+                                    ||
+                                    ((GrobidProperties.getInstance().getConsolidationService() == GrobidConsolidationService.ACCESSON))
+                                    ||
+                                    postValidation(bib, oneRes)) {
                                 results.add(oneRes);
                                 if (cntManager != null) {
                                     cntManager.i(ConsolidationCounters.CONSOLIDATION_SUCCESS);
@@ -291,7 +301,7 @@ public class Consolidation {
 
                 @Override
                 public void onError(int status, String message, Exception exception) {
-                    LOGGER.info("Consolidation service returns error ("+status+") : "+message, exception);
+                    LOGGER.info("Consolidation service returns error (" + status + ") : " + message, exception);
                 }
             });
         } catch(Exception e) {

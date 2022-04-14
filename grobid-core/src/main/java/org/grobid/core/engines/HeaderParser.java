@@ -1506,6 +1506,10 @@ public class HeaderParser extends AbstractParser {
             // not consolidation
             return resHeader;
         }
+
+        if (resHeader.getDOI() == null || resHeader.getDOI().equals("")) {
+            return resHeader;
+        }
         Consolidation consolidator = null;
         try {
             consolidator = Consolidation.getInstance();
@@ -1517,7 +1521,8 @@ public class HeaderParser extends AbstractParser {
                     BiblioItem.correct(resHeader, bib);
                 else if (consolidate == 2)
                     BiblioItem.injectIdentifiers(resHeader, bib);
-            }
+                resHeader.setConsolidated(true);
+            } 
         } catch (Exception e) {
             throw new GrobidException("An exception occured while running bibliographical data consolidation.", e);
         }

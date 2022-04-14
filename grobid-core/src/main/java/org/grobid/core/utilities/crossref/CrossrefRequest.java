@@ -12,6 +12,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.util.EntityUtils;
+import org.grobid.core.utilities.Consolidation;
 import org.grobid.core.utilities.GrobidProperties;
 
 import java.io.IOException;
@@ -100,35 +101,51 @@ public class CrossrefRequest<T extends Object> extends Observable {
 		}
 
 		try {
-			URIBuilder uriBuilder = new URIBuilder(BASE_URL);
-			
-			String path = model;
+            String path = model;
+            URIBuilder uriBuilder = null;
+            if (GrobidProperties.getInstance().getConsolidationService() == Consolidation.GrobidConsolidationService.CROSSREF) {
+                uriBuilder = new URIBuilder(BASE_URL);
+                if (params.get("query.title") != null) {
+                    params.put("query.bibliographic", params.get("query.title"));
+                    params.remove("query.title");
+                }
+                // "mailto" parameter to be used in the crossref query and in User-Agent 
+                //  header, as recommended by CrossRef REST API documentation, e.g. &mailto=GroovyBib@example.org
+                if (GrobidProperties.getCrossrefMailto() != null) {
+                    uriBuilder.setParameter("mailto", GrobidProperties.getCrossrefMailto());
+                }
 
-			if (params.get("query.title") != null) {
-            	params.put("query.bibliographic", params.get("query.title"));
-            	params.remove("query.title");
+                if (params.get("DOI") != null || params.get("doi") != null) {
+                    String doi = params.get("DOI");
+                    if (doi == null)
+                        doi = params.get("doi");
+                    //uriBuilder.setParameter("doi", doi);
+                    path += "/"+doi;
+                    uriBuilder.setPath(path);
+                } else {
+                    uriBuilder.setPath(path);
+                    for (Entry<String, String> cursor : params.entrySet())
+                        if (!cursor.getKey().equals("doi") && !cursor.getKey().equals("DOI") &&
+                            !cursor.getKey().equals("firstPage") && !cursor.getKey().equals("volume"))
+                            uriBuilder.setParameter(cursor.getKey(), cursor.getValue());
+                }
+            } else{
+                uriBuilder = new URIBuilder("https://accesson.kisti.re.kr/api/journalArticleDetail.do");
+
+                if (params.get("DOI") != null || params.get("doi") != null) {
+                    String doi = params.get("DOI");
+                    if (doi == null)
+                        doi = params.get("doi");
+                    uriBuilder.setParameter("doi", doi);
+                }
+                
+                if (GrobidProperties.getAccessonKey() != null) {
+                    uriBuilder.setParameter("key", GrobidProperties.getAccessonKey());
+                }
+                
             }
 
-			if (params.get("DOI") != null || params.get("doi") != null) {
-                String doi = params.get("DOI");
-                if (doi == null)
-                    doi = params.get("doi");
-                //uriBuilder.setParameter("doi", doi);
-                path += "/"+doi;
-                uriBuilder.setPath(path);
-            } else {
-            	uriBuilder.setPath(path);
-				for (Entry<String, String> cursor : params.entrySet()) 
-					if (!cursor.getKey().equals("doi") && !cursor.getKey().equals("DOI") && 
-						!cursor.getKey().equals("firstPage") && !cursor.getKey().equals("volume"))
-						uriBuilder.setParameter(cursor.getKey(), cursor.getValue());
-            }            
-
-			// "mailto" parameter to be used in the crossref query and in User-Agent 
-     		//  header, as recommended by CrossRef REST API documentation, e.g. &mailto=GroovyBib@example.org
-            if (GrobidProperties.getCrossrefMailto() != null) {
-	            uriBuilder.setParameter("mailto", GrobidProperties.getCrossrefMailto());
-	        }
+            
 
             // set recommended User-Agent header
             HttpGet httpget = new HttpGet(uriBuilder.build());

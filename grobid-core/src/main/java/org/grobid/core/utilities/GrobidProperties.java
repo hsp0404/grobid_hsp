@@ -439,6 +439,18 @@ public class GrobidProperties {
         else
             return grobidConfig.grobid.consolidation.crossref.mailto;
     }
+    
+    public static void setAccessonKey(final String key) {
+        grobidConfig.grobid.consolidation.accesson.key = key;
+    }
+    
+    public static String getAccessonKey(){
+        if (grobidConfig.grobid.consolidation.accesson.key == null || grobidConfig.grobid.consolidation.accesson.key.trim().length() == 0) {
+            return null;
+        } else{
+            return grobidConfig.grobid.consolidation.accesson.key;
+        }
+    }
 
     /**
      * Set the Crossref Metadata Plus authorization token to be used for Crossref

@@ -182,7 +182,7 @@ public class GrobidRestProcessFiles {
         return response;
     }
 
-    public Response getMetaData(Map<String, InputStream> paramMap) throws IOException {
+    public Response getMetaData(Map<String, InputStream> paramMap, int consolidated) throws IOException {
         LOGGER.debug(methodLogIn());
         String headerRetVal = null;
         Document doc;
@@ -278,6 +278,7 @@ public class GrobidRestProcessFiles {
                 GrobidAnalysisConfig config =
                     GrobidAnalysisConfig.builder()
                         .pdfAssetPath(new File(assetPath))
+                        .consolidateHeader(consolidated)
                         .build();
 
                 BiblioItem result;
@@ -289,6 +290,10 @@ public class GrobidRestProcessFiles {
 
 
                 MetaVO metaVO = new MetaVO();
+                if (result.isConsolidated()) {
+                    metaVO.setConsolidated(true);
+                }
+                
                 if(result.getTitle() != null){
                     metaVO.setTitle(result.getTitle());
                 }

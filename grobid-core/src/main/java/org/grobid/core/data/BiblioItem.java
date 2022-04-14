@@ -4030,6 +4030,8 @@ public class BiblioItem {
             bib.setIstexId(bibo.getIstexId());
         if (bibo.getArk() != null)
             bib.setArk(bibo.getArk());
+        if (bibo.getKeywords() != null)
+            bib.setKeywords(bibo.getKeywords());
 
         if (bibo.getOAURL() != null)
             bib.setOAURL(bibo.getOAURL());
@@ -4122,6 +4124,9 @@ public class BiblioItem {
         if (bibo.getArticleTitle() != null) {
             bib.setArticleTitle(bibo.getArticleTitle());
         }
+        if (bibo.getAbstract() != null) {
+            bib.setAbstract(bibo.getAbstract());
+        }
         if (bibo.getJournalAbbrev() != null) {
             bib.setJournalAbbrev(bibo.getJournalAbbrev());
         }
@@ -4196,10 +4201,10 @@ public class BiblioItem {
 
                                         if ( StringUtils.isBlank(aut2.getFirstName()) 
                                             || 
-                                             aut.getFirstName().equals(aut2.getFirstName())
+                                             aut.getFirstName().equalsIgnoreCase(aut2.getFirstName())
                                             ||
                                              ( aut.getFirstName().length() == 1 && 
-                                               aut.getFirstName().equals(aut2.getFirstName().substring(0,1)) ) 
+                                               aut.getFirstName().equalsIgnoreCase(aut2.getFirstName().substring(0,1)) ) 
                                             ) {
                                             // we have a match (full or initial)
                                             if (StringUtils.isNotBlank(aut2.getFirstName()) &&
@@ -4216,7 +4221,13 @@ public class BiblioItem {
                                             if (StringUtils.isBlank(aut.getEmail()))
                                                 aut.setEmail(aut2.getEmail());
                                             if(!CollectionUtils.isEmpty(aut2.getAffiliations()))
-                                                aut.setAffiliations(aut2.getAffiliations());
+                                                if (aut.getAffiliations() == null) {
+                                                    aut2.setAffiliations(aut.getAffiliations());
+                                                } else if(aut.getAffiliations().size() >= aut2.getAffiliations().size())
+                                                    aut2.setAffiliations(aut.getAffiliations());
+                                                else{
+                                                    aut.setAffiliations(aut2.getAffiliations());
+                                                }
                                             if (!CollectionUtils.isEmpty(aut2.getAffiliationBlocks())) 
                                                 aut.setAffiliationBlocks(aut2.getAffiliationBlocks());
                                             if (!CollectionUtils.isEmpty(aut2.getAffiliationMarkers())) 
@@ -4225,6 +4236,9 @@ public class BiblioItem {
                                                 aut.setMarkers(aut2.getMarkers());
                                             if (!CollectionUtils.isEmpty(aut2.getLayoutTokens())) 
                                                 aut.setLayoutTokens(aut2.getLayoutTokens());
+                                            if (aut2.getCorresp()) {
+                                                aut.setCorresp(true);
+                                            }
                                             break;
                                         } 
                                     }  
@@ -4233,6 +4247,7 @@ public class BiblioItem {
                         }
                     }
                 }
+                
                 bib.setFullAuthors(bibo.getFullAuthors());
             }
         }

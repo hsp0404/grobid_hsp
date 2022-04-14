@@ -287,7 +287,7 @@ public class GrobidRestService implements GrobidPaths {
 
     private Response getMetaData(Map<String, InputStream> paramMap) throws Exception {
 
-        return restProcessFiles.getMetaData(paramMap);
+        return restProcessFiles.getMetaData(paramMap, 1);
     }
 
     private Response processFulltext(InputStream inputStream,

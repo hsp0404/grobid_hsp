@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class MetaVO {
+    private boolean isConsolidated;
     private String title_ko;
     private String title_en;
 
@@ -62,6 +63,7 @@ public class MetaVO {
 
 
     public MetaVO() {
+        isConsolidated = false;
         detector = LanguageDetectorBuilder.fromLanguages(Language.KOREAN, Language.ENGLISH).build();
         this.keywords = new ArrayList<>();
 //        this.affiliation_ko = new ArrayList<>();
@@ -181,8 +183,10 @@ public class MetaVO {
         HashMap<Integer, String> indexKorName = new HashMap<>();
         int order = 1;
         for (Person a : authors) {
-            a.setOrder(order++);
-            if (a.getLang().equals("kr")) {
+            if(a.getOrder() == -1)
+                a.setOrder(order++);
+            String lang = a.getLang() == null ? "en" : a.getLang();
+            if (lang.equals("kr")) {
                 if (a.getFirstName() == null && a.getLastName().length() == 2) {
                     String lastName = a.getLastName();
                     String resultLastName = lastName.substring(0, 1);
@@ -199,7 +203,8 @@ public class MetaVO {
             }
         }
         for (int i = 0; i < authors.size(); i++) {
-            if(authors.get(i).getLang().equals("kr")){
+            String lang = authors.get(i).getLang() == null ? "en" : authors.get(i).getLang();
+            if(lang.equals("kr")){
                 StringBuilder sb = new StringBuilder();
                 sb.append(authors.get(i).getFirstName() == null ? "" : authors.get(i).getFirstName());
                 sb.append(" ");
@@ -281,7 +286,8 @@ public class MetaVO {
             if (author.isMatched()) {
                 continue;
             }
-            if (author.getLang().equals("en")) {
+            String lang = author.getLang() == null ? "en" : author.getLang();
+            if (lang.equals("en")) {
                 n++;
                 StringBuilder sb = new StringBuilder();
                 String firstName = author.getFirstName() == null ? "" : author.getFirstName().toLowerCase().replaceAll("-", "");
@@ -463,6 +469,15 @@ public class MetaVO {
 //    public void setAffiliation_en(List<Affiliation> affiliation_en) {
 //        this.affiliation_en = affiliation_en;
 //    }
+
+
+    public boolean isConsolidated() {
+        return isConsolidated;
+    }
+
+    public void setConsolidated(boolean consolidated) {
+        isConsolidated = consolidated;
+    }
 
     public String getTitle_ko() {
         return title_ko;
