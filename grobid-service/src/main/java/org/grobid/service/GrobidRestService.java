@@ -214,15 +214,19 @@ public class GrobidRestService implements GrobidPaths {
     @Produces(MediaType.APPLICATION_JSON)
     @POST
     public Response getMeta(
-        @FormDataParam(INPUT)FormDataBodyPart bodyPart) throws Exception {
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart,
+        @DefaultValue("0") @FormDataParam(CONSOLIDATE_HEADER) String consolidateHeader
+        ) throws Exception {
         LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
         for (BodyPart part : bodyPart.getParent().getBodyParts()) {
-            String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
-            InputStream input = part.getEntityAs(InputStream.class);
-            paramMap.put(fileName, input);
+            if(part.getMediaType().toString().equals("application/pdf")){
+                String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
+                InputStream input = part.getEntityAs(InputStream.class);
+                paramMap.put(fileName, input);
+            }
         }
         return getMetaData(
-            paramMap
+            paramMap, consolidateHeader
         );
     }
 
@@ -285,9 +289,9 @@ public class GrobidRestService implements GrobidPaths {
         return restProcessFiles.saveTempPdf(inputStream, fileName);
     }
 
-    private Response getMetaData(Map<String, InputStream> paramMap) throws Exception {
+    private Response getMetaData(Map<String, InputStream> paramMap, String consolidateHeader) throws Exception {
 
-        return restProcessFiles.getMetaData(paramMap, 0);
+        return restProcessFiles.getMetaData(paramMap, Integer.parseInt(consolidateHeader));
     }
 
     private Response processFulltext(InputStream inputStream,
