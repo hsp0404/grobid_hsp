@@ -21,6 +21,8 @@ public class WorkDeserializer extends CrossrefDeserializer<BiblioItem> {
 	protected BiblioItem deserializeOneItem(JsonNode item) {
 		BiblioItem biblio = null;
 		String type = null; // the crossref type of the item, see http://api.crossref.org/types
+        
+        if(item == null)
 
 		if (item.isObject()) {
 			biblio = new BiblioItem();
@@ -77,7 +79,14 @@ public class WorkDeserializer extends CrossrefDeserializer<BiblioItem> {
 			JsonNode titlesNode = item.get("title");
 			if (titlesNode != null && (!titlesNode.isMissingNode()) &&
 				titlesNode.isArray() && (((ArrayNode)titlesNode).size() > 0))
-				biblio.setTitle(((ArrayNode)titlesNode).get(0).asText());
+				biblio.setEnglishTitle(((ArrayNode)titlesNode).get(0).asText());
+
+            JsonNode originalTitleNode = item.get("original-title");
+            if (originalTitleNode != null && (!originalTitleNode.isMissingNode()) &&
+                originalTitleNode.isArray() && (((ArrayNode)originalTitleNode).size() > 0) &&
+                originalTitleNode.get(0).asText().matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*"))
+                biblio.setTitle(((ArrayNode)originalTitleNode).get(0).asText());
+                    
 			
 			JsonNode authorsNode = item.get("author");
 			if (authorsNode != null && (!authorsNode.isMissingNode()) && 

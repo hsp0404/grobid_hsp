@@ -1,5 +1,6 @@
 package org.grobid.core.utilities;
 
+import com.google.common.primitives.Doubles;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Function;
@@ -331,6 +332,44 @@ public class LayoutTokensUtil {
             }
         }
 
+        return result;
+    }
+    
+    public static LayoutToken combineTokens(List<LayoutToken> tokens, Boolean trim) {
+        if (tokens.size() == 0) {
+            return null;
+        }
+        StringBuilder textSb = new StringBuilder();
+        double x = Double.MAX_VALUE;
+        double y = Double.MAX_VALUE;
+        double width = 0.0;
+        double height = 0.0;
+        LayoutToken result = null;
+        for (LayoutToken token : tokens) {
+            String text = token.getText();
+//            if (token.getX() != -1.0 && token.getY() != -1.0 && token.getWidth() != 0.0 && token.getHeight() != 0.0) {
+            if(!text.equals(" ") || !trim){
+                if (result == null)
+                    result = new LayoutToken(token);
+                textSb.append(text);
+                width += token.getWidth();
+                if (x > token.getX()) {
+                    x = token.getX();
+                }
+                if (y > token.getY()) {
+                    y = token.getY();
+                }
+                if (height < token.getHeight()) {
+                    height = token.getHeight();
+                }
+            }
+        }
+        result.setText(textSb.toString().trim());
+        result.setX(x);
+        result.setY(y);
+        result.setWidth(width);
+        result.setHeight(height);
+        
         return result;
     }
 

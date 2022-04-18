@@ -1,5 +1,6 @@
 package org.grobid.core.engines;
 
+import jnr.ffi.annotations.In;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -16,6 +17,7 @@ import org.grobid.core.lexicon.Lexicon;
 import org.grobid.core.tokenization.TaggingTokenCluster;
 import org.grobid.core.tokenization.TaggingTokenClusteror;
 import org.grobid.core.utilities.LayoutTokensUtil;
+import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
 import org.grobid.core.utilities.OffsetPosition;
 import org.grobid.core.analyzers.GrobidAnalyzer;
@@ -25,10 +27,16 @@ import org.grobid.core.engines.label.TaggingLabels;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Int;
+import scala.util.parsing.combinator.testing.Str;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,6 +93,120 @@ public class AuthorParser {
     public List<Person> processingHeaderWithLayoutTokens(List<LayoutToken> inputs, List<PDFAnnotation> pdfAnnotations) {
         return processing(inputs, pdfAnnotations, true);
     }
+    
+    private static List<LayoutToken> reTokenizeKrAuthor(List<LayoutToken> tokens){
+        if (tokens == null || tokens.size() == 0) {
+            return tokens;
+        }
+        List<LayoutToken> resultTokens = new ArrayList<>();
+        List<String> nameList = new ArrayList<>();
+        Map<String, Pair<Integer, Integer>> nameEndIndexMap = Collections.synchronizedMap(new LinkedHashMap<>());
+        StringBuilder name = new StringBuilder();
+        int startTokenIndex = 0;
+        int startNameIndex = -1;
+        
+        if(tokens.size() == 1 && tokens.get(0).getText().matches("[가-힣]+")){
+            String t = tokens.get(0).getText();
+            nameList.add(t);
+            startNameIndex = 0;
+            startTokenIndex = 0;
+            nameEndIndexMap.put(t, new Pair<>(0, 0));
+        }
+
+        for (int i = 0; i < tokens.size(); i++) {
+            String text = tokens.get(i).t();
+            String prevText = "";
+            String nextText = "";
+            if (i != 0)
+                prevText = tokens.get(i - 1).t();
+            if (i != tokens.size()-1)
+                nextText = tokens.get(i + 1).t();
+
+            if (text.matches("[가-힣]+")) {
+                if(nameList.size() == 0 && name.length() == 0)
+                    startTokenIndex = i;
+                if(startNameIndex == -1)
+                    startNameIndex = i;
+                name.append(text);
+            } else if (!prevText.matches("[가-힣]+") && !name.toString().equals("") && i >= 2) {
+                nameList.add(name.insert(1, " ").toString());
+                nameEndIndexMap.put(name.toString().trim(), new Pair<>(startNameIndex, i-2));
+                startNameIndex = -1;
+                name = new StringBuilder();
+            }
+            if (i == tokens.size() - 1 && StringUtils.isNotEmpty(name.toString())) {
+                nameList.add(name.insert(1, " ").toString());
+                if (i != tokens.size()-1)
+                    nameEndIndexMap.put(name.toString().trim(), new Pair<>(startNameIndex, i-2));
+                else
+                    nameEndIndexMap.put(name.toString().trim(), new Pair<>(startNameIndex, i));
+                    
+            }
+        }
+        
+        int nameIndex = 0;
+
+        String targetName = nameList.get(nameIndex);
+
+        ArrayList<List<LayoutToken>> lists = new ArrayList<List<LayoutToken>>();
+
+        for (Map.Entry<String, Pair<Integer, Integer>> entry : nameEndIndexMap.entrySet()) {
+            Pair<Integer, Integer> range = entry.getValue();
+            int b = range.getB();
+            int a = range.getA();
+            if(b - a == 0){
+                LayoutToken targetToken = tokens.get(a);
+                String tok = targetToken.getText();
+                int len = tok.length();
+                LayoutToken temp = new LayoutToken(targetToken);
+                temp.setText(tok.substring(0, 1));
+                temp.setWidth(temp.getWidth()/ len);
+                targetToken.setText(tok.substring(1));
+                targetToken.setX(targetToken.getX() + (targetToken.getWidth() / len));
+                targetToken.setWidth((targetToken.getWidth() / len)*2);
+                ArrayList<LayoutToken> tempTokens = new ArrayList<>();
+                tempTokens.add(temp);
+                tempTokens.add(targetToken);
+                lists.add(tempTokens);
+
+            } else {
+                List<LayoutToken> tempToks = new ArrayList<>();
+                for (int i = a; i <= b; i++) {
+                    tempToks.add(new LayoutToken(tokens.get(i)));
+                }
+                LayoutToken combinedToken = LayoutTokensUtil.combineTokens(tempToks, true);
+                String tok = combinedToken.getText();
+                int len = tok.length();
+                LayoutToken temp = new LayoutToken(combinedToken);
+                temp.setText(tok.substring(0, 1));
+                temp.setWidth(temp.getWidth()/ len);
+                combinedToken.setText(tok.substring(1));
+                combinedToken.setX(combinedToken.getX() + (combinedToken.getWidth() / len));
+                combinedToken.setWidth((combinedToken.getWidth() / len)*2);
+                ArrayList<LayoutToken> tempTokens = new ArrayList<>();
+                tempTokens.add(temp);
+                tempTokens.add(combinedToken);
+                lists.add(tempTokens);
+            }
+        }
+
+        int targetIndex = 0;
+        for (int i = 0; i < tokens.size(); i++) {
+            String n = nameList.get(targetIndex);
+            Pair range = nameEndIndexMap.get(n);
+            if (i >= (Integer) range.getA() && i <= (Integer) range.getB()) {
+                resultTokens.addAll(lists.get(targetIndex));
+                i = (Integer) range.getB();
+                if (targetIndex != nameList.size()-1)
+                    targetIndex++;
+            } else{
+                resultTokens.add(tokens.get(i));
+            }
+
+        }
+
+        return resultTokens;
+    }
 
     /**
      * Common processing of authors in header or citation
@@ -96,6 +218,9 @@ public class AuthorParser {
     public List<Person> processing(List<LayoutToken> tokens, List<PDFAnnotation> pdfAnnotations, boolean head) {
         if (CollectionUtils.isEmpty(tokens)) {
             return null;
+        }
+        if (tokens.toString().matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*([\n]?.*){0,}")) {
+            tokens = reTokenizeKrAuthor(tokens);
         }
         List<Person> fullAuthors = null;
         try {

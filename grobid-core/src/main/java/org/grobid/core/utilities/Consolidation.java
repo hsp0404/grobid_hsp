@@ -120,8 +120,14 @@ public class Consolidation {
      * Try to consolidate one bibliographical object with crossref metadata lookup web services based on
      * core metadata
      */
-    public BiblioItem consolidate(BiblioItem bib, String rawCitation) throws Exception {
+    public BiblioItem consolidate(BiblioItem bib, String rawCitation, String accessonKey) throws Exception {
         final List<BiblioItem> results = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(accessonKey)) {
+            workDeserializer = new AccessonWorkDeserializer();
+        } else {
+            workDeserializer = new WorkDeserializer();
+        }
 
         String theDOI = bib.getDOI();
         if (StringUtils.isNotBlank(theDOI)) {

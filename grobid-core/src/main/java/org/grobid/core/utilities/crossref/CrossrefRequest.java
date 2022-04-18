@@ -103,7 +103,8 @@ public class CrossrefRequest<T extends Object> extends Observable {
 		try {
             String path = model;
             URIBuilder uriBuilder = null;
-            if (GrobidProperties.getInstance().getConsolidationService() == Consolidation.GrobidConsolidationService.CROSSREF) {
+            if (GrobidProperties.getInstance().getConsolidationService() == Consolidation.GrobidConsolidationService.CROSSREF
+            && !deserializer.getClass().getName().contains("Accesson")) {
                 uriBuilder = new URIBuilder(BASE_URL);
                 if (params.get("query.title") != null) {
                     params.put("query.bibliographic", params.get("query.title"));
@@ -187,6 +188,9 @@ public class CrossrefRequest<T extends Object> extends Observable {
 					
 					if (entity != null) {
 						String body = EntityUtils.toString(entity);
+                        if (body.contains("\"koarArticle\":\"\"") || body.contains("Resource not found")) {
+                            return null;
+                        }
 						message.results = deserializer.parse(body);
 					}
 					

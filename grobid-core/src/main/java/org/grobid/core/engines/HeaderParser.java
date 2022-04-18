@@ -406,35 +406,35 @@ public class HeaderParser extends AbstractParser {
                 if ((tokens == null) || (tokens.size() == 0)) {
                     continue;
                 }
-                if (!isTrain) {
+//                if (!isTrain) {
                     Lexicon lexicon = Lexicon.getInstance();
 
-                    for (int i = 0; i < tokens.size(); i++) {
-                        LayoutToken t = tokens.get(i);
-                        String tok = t.getText();
-                        if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
-                            if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
-                                LayoutToken temp = new LayoutToken(t);
-                                temp.setText(tok.substring(0, 1));
-                                temp.setWidth(temp.getWidth()/3);
-                                t.setText(tok.substring(1));
-                                t.setX(t.getX() + (t.getWidth() / 3));
-                                t.setWidth((t.getWidth() / 3)*2);
-                                tokens.add(i, temp);
-                            }
-                        } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-                            if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
-                                LayoutToken temp = new LayoutToken(t);
-                                temp.setText(tok.substring(0, 2));
-                                temp.setWidth(temp.getWidth()/4);
-                                t.setText(tok.substring(2));
-                                t.setX(t.getX() + (t.getWidth() / 4));
-                                t.setWidth((t.getWidth() / 2));
-                                tokens.add(i, temp);
-                            }
-                        }
-                    }
-                }
+//                    for (int i = 0; i < tokens.size(); i++) {
+//                        LayoutToken t = tokens.get(i);
+//                        String tok = t.getText();
+//                        if(tok.length() == 3 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
+//                            if (lexicon.inLastNames(tok.substring(0, 1)) && lexicon.inFirstNames(tok.substring(1))) {
+//                                LayoutToken temp = new LayoutToken(t);
+//                                temp.setText(tok.substring(0, 1));
+//                                temp.setWidth(temp.getWidth()/3);
+//                                t.setText(tok.substring(1));
+//                                t.setX(t.getX() + (t.getWidth() / 3));
+//                                t.setWidth((t.getWidth() / 3)*2);
+//                                tokens.add(i, temp);
+//                            }
+//                        } else if (tok.length() == 4 && tok.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+//                            if (lexicon.inLastNames(tok.substring(0, 2)) && lexicon.inFirstNames(tok.substring(2))) {
+//                                LayoutToken temp = new LayoutToken(t);
+//                                temp.setText(tok.substring(0, 2));
+//                                temp.setWidth(temp.getWidth()/4);
+//                                t.setText(tok.substring(2));
+//                                t.setX(t.getX() + (t.getWidth() / 4));
+//                                t.setWidth((t.getWidth() / 2));
+//                                tokens.add(i, temp);
+//                            }
+//                        }
+//                    }
+//                }
 
                 for(LayoutToken token : tokens) {
                     /*if (" ".equals(token.getText()) || "\n".equals(token.getText())) {
@@ -1515,14 +1515,24 @@ public class HeaderParser extends AbstractParser {
             consolidator = Consolidation.getInstance();
             if (consolidator.getCntManager() == null)
                 consolidator.setCntManager(cntManager);
-            BiblioItem bib = consolidator.consolidate(resHeader, null);
+            BiblioItem bib = consolidator.consolidate(resHeader, null, GrobidProperties.getAccessonKey());
             if (bib != null) {
                 if (consolidate == 1)
                     BiblioItem.correct(resHeader, bib);
                 else if (consolidate == 2)
                     BiblioItem.injectIdentifiers(resHeader, bib);
                 resHeader.setConsolidated(true);
-            } 
+            } else if (bib == null && StringUtils.isNotEmpty(GrobidProperties.getAccessonKey())) {
+                // accesson open api에서 검색되지 않았을때 crossref에서 재검색
+                bib = consolidator.consolidate(resHeader, null, null);
+                if (bib != null) {
+                    if (consolidate == 1)
+                        BiblioItem.correct(resHeader, bib);
+                    else if (consolidate == 2)
+                        BiblioItem.injectIdentifiers(resHeader, bib);
+                    resHeader.setConsolidated(true);
+                }
+            }
         } catch (Exception e) {
             throw new GrobidException("An exception occured while running bibliographical data consolidation.", e);
         }
