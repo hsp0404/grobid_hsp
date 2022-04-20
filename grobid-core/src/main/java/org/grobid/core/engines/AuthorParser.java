@@ -94,20 +94,25 @@ public class AuthorParser {
         return processing(inputs, pdfAnnotations, true);
     }
     
-    private static List<LayoutToken> reTokenizeKrAuthor(List<LayoutToken> tokens){
+    private static List<LayoutToken> reTokenizeKrAuthor(List<LayoutToken> tokens) {
         if (tokens == null || tokens.size() == 0) {
             return tokens;
         }
+        List<LayoutToken> originTokens = new ArrayList<>();
+        for (LayoutToken token : tokens) {
+            originTokens.add(new LayoutToken(token));
+        }
         List<LayoutToken> resultTokens = new ArrayList<>();
         List<String> nameList = new ArrayList<>();
-        Map<String, Pair<Integer, Integer>> nameEndIndexMap = Collections.synchronizedMap(new LinkedHashMap<>());
+//        Map<String, Pair<Integer, Integer>> nameEndIndexMap = Collections.synchronizedMap(new LinkedHashMap<>());
+        Map<String, Pair<Integer, Integer>> nameEndIndexMap = new LinkedHashMap<>();
         StringBuilder name = new StringBuilder();
         int startTokenIndex = 0;
         int startNameIndex = -1;
         
         if(tokens.size() == 1 && tokens.get(0).getText().matches("[가-힣]+")){
             String t = tokens.get(0).getText();
-            nameList.add(t);
+            nameList.add(t.trim());
             startNameIndex = 0;
             startTokenIndex = 0;
             nameEndIndexMap.put(t, new Pair<>(0, 0));
@@ -127,15 +132,21 @@ public class AuthorParser {
                     startTokenIndex = i;
                 if(startNameIndex == -1)
                     startNameIndex = i;
+                if (text.length() > 1 && name.length() == 0) {
+                    nameList.add(text.trim());
+                    nameEndIndexMap.put(text.trim(), new Pair<>(i, i));
+                    startNameIndex = -1;
+                    continue;
+                }
                 name.append(text);
-            } else if (!prevText.matches("[가-힣]+") && !name.toString().equals("") && i >= 2) {
-                nameList.add(name.insert(1, " ").toString());
+            } else if (!prevText.matches("[가-힣]+") && !name.toString().equals("") && i >= 1) {
+                nameList.add(name.insert(1, " ").toString().trim());
                 nameEndIndexMap.put(name.toString().trim(), new Pair<>(startNameIndex, i-2));
                 startNameIndex = -1;
                 name = new StringBuilder();
             }
             if (i == tokens.size() - 1 && StringUtils.isNotEmpty(name.toString())) {
-                nameList.add(name.insert(1, " ").toString());
+                nameList.add(name.insert(1, " ").toString().trim());
                 if (i != tokens.size()-1)
                     nameEndIndexMap.put(name.toString().trim(), new Pair<>(startNameIndex, i-2));
                 else
@@ -144,11 +155,16 @@ public class AuthorParser {
             }
         }
         
+        if(nameList.size() == 0){
+            return originTokens;
+        }
+        
         int nameIndex = 0;
 
         String targetName = nameList.get(nameIndex);
 
-        ArrayList<List<LayoutToken>> lists = new ArrayList<List<LayoutToken>>();
+
+        ArrayList<List<LayoutToken>> lists = new ArrayList<>();
 
         for (Map.Entry<String, Pair<Integer, Integer>> entry : nameEndIndexMap.entrySet()) {
             Pair<Integer, Integer> range = entry.getValue();
@@ -189,11 +205,14 @@ public class AuthorParser {
                 lists.add(tempTokens);
             }
         }
-
+    
         int targetIndex = 0;
         for (int i = 0; i < tokens.size(); i++) {
             String n = nameList.get(targetIndex);
             Pair range = nameEndIndexMap.get(n);
+            if (range == null) {
+                return originTokens;
+            }
             if (i >= (Integer) range.getA() && i <= (Integer) range.getB()) {
                 resultTokens.addAll(lists.get(targetIndex));
                 i = (Integer) range.getB();
