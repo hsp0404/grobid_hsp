@@ -2238,15 +2238,15 @@ public class FullTextParser extends AbstractParser {
                 }
                 result.setBlockPtrs(blockPtrs);
 
-    			// page setting: the first token could be a space from previous page
-    			for (LayoutToken lt : localTokenizationTable) {
-    				if (!LayoutTokensUtil.spaceyToken(lt.t()) && !LayoutTokensUtil.newLineToken(lt.t())) {
-    					result.setPage(lt.getPage());
-    					break;
-    				}
-    			}
-    			results.add(result);
-    			result.setId("" + (results.size() - 1));
+                // page setting: the first token could be a space from previous page
+                for (LayoutToken lt : localTokenizationTable) {
+                    if (!LayoutTokensUtil.spaceyToken(lt.t()) && !LayoutTokensUtil.newLineToken(lt.t())) {
+                        result.setPage(lt.getPage());
+                        break;
+                    }
+                }
+                results.add(result);
+                result.setId("" + (results.size() - 1));
             }
 		}
 
