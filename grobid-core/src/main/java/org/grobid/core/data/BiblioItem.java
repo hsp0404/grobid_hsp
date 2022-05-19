@@ -1217,30 +1217,46 @@ public class BiblioItem {
         StringBuilder sb1 = new StringBuilder();
         StringBuilder sb2 = new StringBuilder();
         String autName = TextUtilities.capitalizeFully(sb1.append(aut.getFirstName()).append(aut.getMiddleName()).append(aut.getLastName()).toString(), fullPunctuations);
+        List<Person> resultFullAuthors = new ArrayList<>();
+        resultFullAuthors.addAll(fullAuthors);
+        int i = 0;
         for (Person fullAuthor : fullAuthors) {
             String name = TextUtilities.capitalizeFully(sb2.append(fullAuthor.getFirstName()).append(fullAuthor.getMiddleName()).append(fullAuthor.getLastName()).toString(), fullPunctuations);
             if (autName.equalsIgnoreCase(name)) {
-                fullAuthor.getLayoutTokens().addAll(aut.getLayoutTokens());
-                if (fullAuthor.getTitle() == null && aut.getTitle() != null) {
-                    fullAuthor.setTitle(aut.getTitle());
-                }
-                if (fullAuthor.getSuffix() == null && aut.getSuffix() != null) {
-                    fullAuthor.setSuffix(aut.getSuffix());
-                }
-                if (fullAuthor.getORCID() == null && aut.getORCID() != null) {
-                    fullAuthor.setORCID(aut.getORCID());
-                }
-                if (!fullAuthor.getCorresp() && aut.getCorresp()) {
-                    fullAuthor.setCorresp(true);
-                }
-                if (fullAuthor.getMarkers() == null && aut.getMarkers() != null ) {
-                    fullAuthor.setMarkers(aut.getMarkers());
+                if (aut.getMarkers() != null && fullAuthor.getMarkers() == null) {
+                    consol(fullAuthor, aut);
+                    resultFullAuthors.remove(i);
+                    resultFullAuthors.add(aut);
+                    fullAuthors.clear();
+                    fullAuthors.addAll(resultFullAuthors);
+                } else{
+                    consol(aut, fullAuthor);
                 }
                 return;
             }
             sb2.delete(0, sb2.length());
+            i++;
         }
         fullAuthors.add(aut);
+    }
+
+    private void consol(Person a, Person b) {
+        b.getLayoutTokens().addAll(a.getLayoutTokens());
+        if (b.getTitle() == null && a.getTitle() != null) {
+            b.setTitle(a.getTitle());
+        }
+        if (b.getSuffix() == null && a.getSuffix() != null) {
+            b.setSuffix(a.getSuffix());
+        }
+        if (b.getORCID() == null && a.getORCID() != null) {
+            b.setORCID(a.getORCID());
+        }
+        if (!b.getCorresp() && a.getCorresp()) {
+            b.setCorresp(true);
+        }
+        if (b.getMarkers() == null && a.getMarkers() != null ) {
+            b.setMarkers(a.getMarkers());
+        }
     }
 
     private void addFullAuthorWithMerge(List<Person> fullAuthors, Person aut) {
