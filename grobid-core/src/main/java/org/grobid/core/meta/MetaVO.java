@@ -8,6 +8,7 @@ import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.commons.lang3.StringUtils;
 import org.grobid.core.data.*;
+import org.grobid.core.layout.LayoutToken;
 import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
 import scala.Option;
@@ -57,6 +58,7 @@ public class MetaVO {
     private String key;
 
     private static List<Pair<String, String>> lastNamePairs;
+    private List<LayoutToken> authorTokens = new ArrayList<>();
 
 
 
@@ -181,87 +183,124 @@ public class MetaVO {
 
     public void setAuthor(List<Person> authors) throws EncoderException {
         HashMap<Integer, String> indexKorName = new HashMap<>();
-        int order = 1;
+        int engOrder = 1;
+        int korOrder = 1;
         for (Person a : authors) {
-            if(a.getOrder() == -1)
-                a.setOrder(order++);
             String lang = a.getLang() == null ? "en" : a.getLang();
-            if (lang.equals("kr")) {
-                if (a.getFirstName() == null && a.getLastName().length() == 2) {
-                    String lastName = a.getLastName();
-                    String resultLastName = lastName.substring(0, 1);
-                    String resultFirstName = lastName.substring(1);
-                    a.setFirstName(resultFirstName);
-                    a.setLastName(resultLastName);
-                } else if (a.getLastName() == null && a.getFirstName().length() == 2) {
-                    String firstName = a.getFirstName();
-                    String resultFirstName = firstName.substring(1);
-                    String resultLastName = firstName.substring(0, 1);
-                    a.setFirstName(resultFirstName);
-                    a.setLastName(resultLastName);
+            a.setLang(lang);
+            if(lang.equals("kr")){
+                a.setOrder(korOrder++);
+//                this.authors.add(new AuthorVO(a));
+            }
+            else {
+                a.setOrder(engOrder++);
+//                this.authors.add(new AuthorVO(a));
+            }
+        }
+        if (engOrder == korOrder) {
+            a:
+            for (Person a : authors){
+                if(a.isMatched())
+                    continue a;
+
+                b:
+                for (Person b : authors) {
+                    if (b.isMatched() || a == b) {
+                        continue b;
+                    }
+                    if(a.getOrder() == b.getOrder()){
+                        a.setMatched(true);
+                        b.setMatched(true);
+                        if (a.getLang().equals("kr"))
+                            this.authors.add(new AuthorVO(new Pair<>(a,b)));
+                        else
+                            this.authors.add(new AuthorVO(new Pair<>(b, a)));
+                        continue a;
+                    }
                 }
             }
         }
-        for (int i = 0; i < authors.size(); i++) {
-            String lang = authors.get(i).getLang() == null ? "en" : authors.get(i).getLang();
-            if(lang.equals("kr")){
-                StringBuilder sb = new StringBuilder();
-                sb.append(authors.get(i).getFirstName() == null ? "" : authors.get(i).getFirstName());
-                sb.append(" ");
-                sb.append(authors.get(i).getLastName() == null ? "" : authors.get(i).getLastName());
-                String engName = Kor2EngName(sb.toString());
-                indexKorName.put(i, engName);
-            }
-        }
-
-        double range = 0.875;
-        int soundexRange = 4;
-
-        Set<Integer> removeList = new HashSet<>();
-        int n = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
-
-        for (Integer r : removeList) {
-            indexKorName.remove(r);
-        }
-        removeList.clear();
-
-        soundexRange = 4;
-        range = 0.65;
-        int n2 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
-
-        for (Integer r : removeList) {
-            indexKorName.remove(r);
-        }
-
-        removeList.clear();
-
-        soundexRange = 3;
-        range = 0.4;
-        int n3 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
-
-        for (Integer r : removeList) {
-            indexKorName.remove(r);
-        }
-
-        removeList.clear();
-
-        soundexRange = 2;
-        range = 0.4;
-        int n4 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
-
-        for (Integer r : removeList) {
-            indexKorName.remove(r);
-        }
-
-        // 영문저자만 있는 것
-        if (n == 0 && n2 == 0 && n3 == 0 && n4 == 0 && authors.size() != 0) {
-            for (Person author : authors) {
-                this.authors.add(new AuthorVO(author));
-            }
-        }
-        if (this.authors.size() == 1) {
-            this.authors.get(0).setCorresp(true);
-        }
+        
+//        for (Person a : authors) {
+//            if(a.getOrder() == -1)
+//                a.setOrder(order++);
+//            String lang = a.getLang() == null ? "en" : a.getLang();
+//            if (lang.equals("kr")) {
+//                if (a.getFirstName() == null && a.getLastName().length() == 2) {
+//                    String lastName = a.getLastName();
+//                    String resultLastName = lastName.substring(0, 1);
+//                    String resultFirstName = lastName.substring(1);
+//                    a.setFirstName(resultFirstName);
+//                    a.setLastName(resultLastName);
+//                } else if (a.getLastName() == null && a.getFirstName().length() == 2) {
+//                    String firstName = a.getFirstName();
+//                    String resultFirstName = firstName.substring(1);
+//                    String resultLastName = firstName.substring(0, 1);
+//                    a.setFirstName(resultFirstName);
+//                    a.setLastName(resultLastName);
+//                }
+//            }
+//        }
+//        for (int i = 0; i < authors.size(); i++) {
+//            String lang = authors.get(i).getLang() == null ? "en" : authors.get(i).getLang();
+//            if(lang.equals("kr")){
+//                StringBuilder sb = new StringBuilder();
+//                sb.append(authors.get(i).getFirstName() == null ? "" : authors.get(i).getFirstName());
+//                sb.append(" ");
+//                sb.append(authors.get(i).getLastName() == null ? "" : authors.get(i).getLastName());
+//                String engName = Kor2EngName(sb.toString());
+//                indexKorName.put(i, engName);
+//            }
+//        }
+//
+//        double range = 0.875;
+//        int soundexRange = 4;
+//
+//        Set<Integer> removeList = new HashSet<>();
+//        int n = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+//
+//        for (Integer r : removeList) {
+//            indexKorName.remove(r);
+//        }
+//        removeList.clear();
+//
+//        soundexRange = 4;
+//        range = 0.65;
+//        int n2 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+//
+//        for (Integer r : removeList) {
+//            indexKorName.remove(r);
+//        }
+//
+//        removeList.clear();
+//
+//        soundexRange = 3;
+//        range = 0.4;
+//        int n3 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+//
+//        for (Integer r : removeList) {
+//            indexKorName.remove(r);
+//        }
+//
+//        removeList.clear();
+//
+//        soundexRange = 2;
+//        range = 0.4;
+//        int n4 = process(indexKorName, authors, removeList, range, soundexRange, lastNamePairs);
+//
+//        for (Integer r : removeList) {
+//            indexKorName.remove(r);
+//        }
+//
+//        // 영문저자만 있는 것
+//        if (n == 0 && n2 == 0 && n3 == 0 && n4 == 0 && authors.size() != 0) {
+//            for (Person author : authors) {
+//                this.authors.add(new AuthorVO(author));
+//            }
+//        }
+//        if (this.authors.size() == 1) {
+//            this.authors.get(0).setCorresp(true);
+//        }
         
         Collections.sort(this.authors);
 
@@ -622,6 +661,14 @@ public class MetaVO {
     public void setAuthors(List<AuthorVO> authors) {
         this.authors = authors;
     }
+
+//    public List<LayoutToken> getAuthorTokens() {
+//        return authorTokens;
+//    }
+//
+//    public void setAuthorTokens(List<LayoutToken> authorTokens) {
+//        this.authorTokens = authorTokens;
+//    }
 
     public static String Kor2EngName(String name){
         StringBuilder stringBuilder = new StringBuilder();

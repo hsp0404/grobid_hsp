@@ -185,11 +185,14 @@ public class HeaderParser extends AbstractParser {
                     if (authorSegments.size() > 1) {
                         fragmentedAuthors = true;
                     }
+                    List<LayoutToken> authors = resHeader.getLabeledTokens().get("<author>");
+                    authors.clear();
                     for (int k = 0; k < authorSegments.size(); k++) {
                         if (authorSegments.get(k).size() == 0)
                             continue;
                         List<Person> localAuthors = parsers.getAuthorParser()
                             .processingHeaderWithLayoutTokens(authorSegments.get(k), doc.getPDFAnnotations());
+                        authors.addAll(authorSegments.get(k));
                         if (localAuthors != null) {
                             for (Person pers : localAuthors) {
                                 resHeader.addFullAuthor(pers);

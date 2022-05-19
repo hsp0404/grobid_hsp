@@ -219,7 +219,7 @@ public class GrobidRestService implements GrobidPaths {
         ) throws Exception {
         LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
         for (BodyPart part : bodyPart.getParent().getBodyParts()) {
-            if(part.getMediaType().toString().equals("application/pdf")){
+            if(part.getMediaType().toString().equals("application/pdf") || part.getMediaType().toString().equals("application/octet-stream")){
                 String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
                 InputStream input = part.getEntityAs(InputStream.class);
                 paramMap.put(fileName, input);

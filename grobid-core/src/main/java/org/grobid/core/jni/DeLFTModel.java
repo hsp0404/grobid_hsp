@@ -28,6 +28,7 @@ public class DeLFTModel {
 
     public DeLFTModel(GrobidModel model, String architecture) {
         this.modelName = model.getModelName().replace("-", "_");
+//        this.modelName = model.getModelName();
         this.architecture = architecture;
         try {
             LOGGER.info("Loading DeLFT model for " + model.getModelName() + " with architecture " + architecture + "...");            
@@ -297,7 +298,7 @@ public class DeLFTModel {
             LOGGER.info("Train DeLFT model " + modelName + "...");
             List<String> command = new ArrayList<>();
             List<String> subcommands = Arrays.asList("python3", 
-                "grobidTagger.py", 
+                "delft/application/grobidTagger.py", 
                 modelName,
                 "train",
                 "--input", trainingData.getAbsolutePath(),

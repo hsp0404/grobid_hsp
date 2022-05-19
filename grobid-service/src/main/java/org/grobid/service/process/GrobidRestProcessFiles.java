@@ -10,6 +10,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.grobid.core.data.BibDataSet;
 import org.grobid.core.data.BiblioItem;
 import org.grobid.core.data.PatentItem;
+import org.grobid.core.data.Person;
 import org.grobid.core.data.Table;
 import org.grobid.core.document.Document;
 import org.grobid.core.document.DocumentPiece;
@@ -293,7 +294,29 @@ public class GrobidRestProcessFiles {
                 if (result.isConsolidated()) {
                     metaVO.setConsolidated(true);
                 }
+
+                List<Person> fullAuthors = result.getFullAuthors();
+                List<LayoutToken> resultTokens = new ArrayList<>();
+//                for (Person fullAuthor : fullAuthors) {
+//                    List<LayoutToken> authorTokens = fullAuthor.getLayoutTokens();
+//                    for (LayoutToken authorToken : authorTokens) {
+//                        if (authorToken.getLabels().size() >= 2) {
+//                            resultTokens.add(authorToken);
+//                        }
+//                    }
+//                }
+//                metaVO.setAuthorTokens(resultTokens);
                 
+//
+                List<LayoutToken> authorTokens = result.getLabeledTokens().get("<author>");
+//                if (authorTokens != null && authorTokens.size() != 0) {
+//                    for (LayoutToken authorToken : authorTokens) {
+//                        if (authorToken.getLabels().size() >= 2) {
+//                            resultTokens.add(authorToken);
+//                        }
+//                    }
+//                    metaVO.setAuthorTokens(resultTokens);
+//                }
                 if(result.getTitle() != null){
                     metaVO.setTitle(result.getTitle());
                 }

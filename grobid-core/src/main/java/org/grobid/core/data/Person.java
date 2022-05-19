@@ -405,9 +405,15 @@ public class Person {
             firstName = firstName.substring(0,1);
         } 
 
-        firstName = TextUtilities.capitalizeFully(firstName, NAME_DELIMITERS);
-        middleName = TextUtilities.capitalizeFully(middleName, NAME_DELIMITERS);
-        lastName = TextUtilities.capitalizeFully(lastName, NAME_DELIMITERS);
+        try{
+            firstName = TextUtilities.capitalizeFully(firstName, NAME_DELIMITERS);
+            if(firstName != null)
+                firstName = firstName.replaceAll(" ", "");
+            middleName = TextUtilities.capitalizeFully(middleName, NAME_DELIMITERS);
+            lastName = TextUtilities.capitalizeFully(lastName, NAME_DELIMITERS);
+        }catch (NullPointerException e){
+            System.out.println(e);
+        }
     }
 	
     // assume never more than 3 initials
@@ -787,6 +793,8 @@ public class Person {
         for(Person person : persons) {
             if (person.getLastName() == null || person.getLastName().trim().length() == 0) 
                 continue;
+//            else if ((person.getFirstName().equals("서") && person.getLastName().equals("론")) || (person.getFirstName().equals("론") && person.getLastName().equals("서")))
+//                continue;
             else
                 result.add(person);
         }

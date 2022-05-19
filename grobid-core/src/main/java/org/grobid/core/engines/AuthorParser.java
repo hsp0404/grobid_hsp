@@ -94,7 +94,7 @@ public class AuthorParser {
         return processing(inputs, pdfAnnotations, true);
     }
     
-    private static List<LayoutToken> reTokenizeKrAuthor(List<LayoutToken> tokens) {
+    public List<LayoutToken> reTokenizeKrAuthor(List<LayoutToken> tokens) {
         if (tokens == null || tokens.size() == 0) {
             return tokens;
         }
@@ -171,7 +171,7 @@ public class AuthorParser {
             int b = range.getB();
             int a = range.getA();
             if(b - a == 0){
-                LayoutToken targetToken = tokens.get(a);
+                LayoutToken targetToken = new LayoutToken(tokens.get(a));
                 String tok = targetToken.getText();
                 int len = tok.length();
                 LayoutToken temp = new LayoutToken(targetToken);
@@ -223,6 +223,8 @@ public class AuthorParser {
             }
 
         }
+        tokens.clear();
+        tokens.addAll(resultTokens);
 
         return resultTokens;
     }
@@ -340,14 +342,16 @@ public class AuthorParser {
                         aut.setFirstName(clusterContent);
                         newMarker = false;
                     } else if (aut.getFirstName() != null) {
-                        // new author
-                        if (aut.notNull()) {
+                        if ((aut.getFirstName().matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*") && clusterContent.matches(".*[a-zA-Z]+.*")) ||
+                            (aut.getFirstName().matches(".*[a-zA-Z]+.*") && clusterContent.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*"))){
                             if (fullAuthors == null)
                                 fullAuthors = new ArrayList<Person>();
                             fullAuthors.add(aut);
+                            aut = new Person();
+                            aut.setFirstName(clusterContent);
+                        } else{
+                            aut.setFirstName(aut.getFirstName()+" "+clusterContent);
                         }
-                        aut = new Person();
-                        aut.setFirstName(clusterContent);
                     } else {
                         aut.setFirstName(clusterContent);
                     }
@@ -381,6 +385,12 @@ public class AuthorParser {
                         aut.setLastName(clusterContent);
                     }
                     aut.addLayoutTokens(cluster.concatTokens());
+                    if (aut.getFirstName() != null) {
+                        if (fullAuthors == null)
+                            fullAuthors = new ArrayList<Person>();
+                        fullAuthors.add(aut);
+                        aut = new Person();
+                    }
                 } else if (clusterLabel.equals(TaggingLabels.NAMES_HEADER_SUFFIX) || 
                             clusterLabel.equals(TaggingLabels.NAMES_CITATION_SUFFIX)) {
                     /*if (newMarker) {

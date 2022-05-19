@@ -107,7 +107,8 @@ public class FeaturesVectorName {
         if (label != null)
             res.append(" " + label + "\n");
         else
-            res.append(" 0\n");
+//            res.append(" 0\n");
+            res.append(" \n");
 
         return res.toString();
     }
