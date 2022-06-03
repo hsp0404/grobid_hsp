@@ -308,7 +308,7 @@ public class GrobidRestProcessFiles {
 //                metaVO.setAuthorTokens(resultTokens);
                 
 //
-                List<LayoutToken> authorTokens = result.getLabeledTokens().get("<author>");
+//                List<LayoutToken> authorTokens = result.getLabeledTokens().get("<author>");
 //                if (authorTokens != null && authorTokens.size() != 0) {
 //                    for (LayoutToken authorToken : authorTokens) {
 //                        if (authorToken.getLabels().size() >= 2) {
