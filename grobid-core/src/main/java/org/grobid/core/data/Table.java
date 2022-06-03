@@ -343,12 +343,13 @@ public class Table extends Figure implements Comparable<Table> {
 		}
 
 		try {
-			Integer.valueOf(getLabel().trim(), 10);
+			Integer.valueOf(getLabel().trim().replaceAll("[^0-9]", ""), 10);
 		} catch (NumberFormatException e) {
 			cnt.i(TableRejectionCounters.CANNOT_PARSE_LABEL_TO_INT);
 			return false;
 		}
-		if (!getHeader().toLowerCase().startsWith("table")) {
+//		if (!getHeader().toLowerCase().startsWith("table")) {
+		if (!getHeader().toLowerCase().matches(".*table.*") && !getHeader().toLowerCase().matches(".*표.*")) {
 			cnt.i(TableRejectionCounters.HEADER_NOT_STARTS_WITH_TABLE_WORD);
 			return false;
 		}

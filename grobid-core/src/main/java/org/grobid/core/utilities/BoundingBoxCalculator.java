@@ -66,7 +66,30 @@ public class BoundingBoxCalculator {
             temp.add(tokens.get(i));
         }
         for (List<LayoutToken> list : lists) {
-            boundingBoxes.add(calculateOneBox(list));
+            boolean separate = false;
+            int separateIndex = 0;
+            for (int i = 0; i < list.size(); i++) {
+                if (i == list.size()-1)
+                    break;
+                
+                LayoutToken now = list.get(i);
+                LayoutToken next = list.get(i + 1);
+                
+                if(LayoutTokensUtil.noCoords(now) || LayoutTokensUtil.noCoords(next))
+                    continue;
+                
+                if(Math.abs(now.getX() - next.getX()) > 50 && Math.abs(now.getY() - next.getY()) > 50){
+                    separate = true;
+                    separateIndex = i + 1;
+                }
+            }
+
+            if (separate && separateIndex > 0) {
+                boundingBoxes.add(calculateOneBox(Lists.newArrayList(list.subList(0, separateIndex))));
+                boundingBoxes.add(calculateOneBox(Lists.newArrayList(list.subList(separateIndex, list.size()-1))));
+            } else {
+                boundingBoxes.add(calculateOneBox(list));
+            }
         }
         return boundingBoxes;
     }

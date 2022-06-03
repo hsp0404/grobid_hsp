@@ -2228,6 +2228,9 @@ public class FullTextParser extends AbstractParser {
             
 
             for (Table result : newLocalResults) {
+                if (result.getHeader().equals("")) {
+                    continue;
+                }
                 List<LayoutToken> localTokenizationTable = result.getLayoutTokens();
                 //result.setLayoutTokens(tokenizationTable);
 
