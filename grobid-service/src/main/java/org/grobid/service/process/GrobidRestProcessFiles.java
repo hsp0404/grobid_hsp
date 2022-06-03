@@ -355,7 +355,8 @@ public class GrobidRestProcessFiles {
 //                }
                 metaVO.setAssetPath(assetPath);
 
-                metaVO.setEmail(result.getEmail());
+                if(result.getEmail() != null)
+                    metaVO.setEmail(result.getEmail().replaceAll("\\*\\*\\*",""));
 
 
     //            List<BibDataSet> bibDataSetList = engine.processReferences(originFile, md5Str, 0);
