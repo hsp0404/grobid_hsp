@@ -116,8 +116,8 @@ public class TableParser extends AbstractParser {
         }     
 
         // last table
-//        table.setTextArea(Collections.singletonList(BoundingBoxCalculator.calculateOneBox(table.getLayoutTokens(), true)));
-        table.setTextArea(BoundingBoxCalculator.calculateDiffPage(table.getLayoutTokens()));
+        table.setTextArea(Collections.singletonList(BoundingBoxCalculator.calculateOneBox(table.getLayoutTokens(), true)));
+//        table.setTextArea(BoundingBoxCalculator.calculateDiffPage(table.getLayoutTokens()));
         tables.add(table);
 
         return tables;

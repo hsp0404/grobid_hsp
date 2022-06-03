@@ -1223,7 +1223,7 @@ public class BiblioItem {
         for (Person fullAuthor : fullAuthors) {
             String name = TextUtilities.capitalizeFully(sb2.append(fullAuthor.getFirstName()).append(fullAuthor.getMiddleName()).append(fullAuthor.getLastName()).toString(), fullPunctuations);
             if (autName.equalsIgnoreCase(name)) {
-                if (aut.getMarkers() != null && fullAuthor.getMarkers() == null) {
+                if ((aut.getMarkers() != null && fullAuthor.getMarkers() == null) || (aut.getTitle() != null && fullAuthor.getTitle() == null)) {
                     consol(fullAuthor, aut);
                     resultFullAuthors.remove(i);
                     resultFullAuthors.add(aut);

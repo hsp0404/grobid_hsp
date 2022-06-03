@@ -219,6 +219,10 @@ public class MetaVO {
                     }
                 }
             }
+        }else {
+            for (Person a : authors) {
+                this.authors.add(new AuthorVO(a));
+            }
         }
         
 //        for (Person a : authors) {

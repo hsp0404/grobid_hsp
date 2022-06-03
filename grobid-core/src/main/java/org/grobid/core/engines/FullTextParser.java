@@ -2219,6 +2219,8 @@ public class FullTextParser extends AbstractParser {
                         newLocalResults.add(t1);
                         newLocalResults.add(t2);
                     }
+                } else{
+                    newLocalResults.addAll(localResults);
                 }
             } else{
                 newLocalResults.addAll(localResults);

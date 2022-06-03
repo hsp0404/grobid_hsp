@@ -1075,10 +1075,8 @@ public class HeaderParser extends AbstractParser {
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_KEYWORD)) {
                 if (clusterContent.contains("(") && clusterContent.contains(")")) {
-                    clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", "");
-                }
-                if (clusterNonDehypenizedContent.contains("\n\n")){
-                    clusterContent = clusterNonDehypenizedContent.replaceAll("\n\n", ", ");
+                    clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", ",").replaceAll(",,", ",");
+                    
                 }
                 if (biblio.getKeyword() != null) {
                     biblio.setKeyword(biblio.getKeyword() + ", " + clusterContent);
