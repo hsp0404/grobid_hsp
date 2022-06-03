@@ -33,7 +33,7 @@ public class AuthorVO implements Comparable<AuthorVO> {
             sb.append(person.getFirstName());
             this.name_kr = sb.toString().replaceAll(" ","");
         }
-        this.isCorresp = false;
+경        this.isCorresp = person.getCorresp();
         ArrayList<AffiliationVO> affiliationVOS = new ArrayList<>();
         List<Affiliation> affiliations = person.getAffiliations();
         if (affiliations != null) {

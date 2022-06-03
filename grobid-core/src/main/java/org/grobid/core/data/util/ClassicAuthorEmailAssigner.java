@@ -15,7 +15,12 @@ public class ClassicAuthorEmailAssigner implements AuthorEmailAssigner {
         // if 1 email and 1 author, not too hard...
         if (fullAuthors != null) {
             if ((emails.size() == 1) && (fullAuthors.size() == 1)) {
-                fullAuthors.get(0).setEmail(emails.get(0));
+                if (emails.get(0).contains("***")) {
+                    fullAuthors.get(0).setCorresp(true);
+                    fullAuthors.get(0).setEmail(emails.get(0).replaceAll("\\*\\*\\*", ""));
+                } else {
+                    fullAuthors.get(0).setEmail(emails.get(0));
+                }
             } else {
                 // we asociate emails to the authors based on string proximity
                 for (String mail : emails) {

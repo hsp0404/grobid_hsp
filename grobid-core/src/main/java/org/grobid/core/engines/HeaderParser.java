@@ -1021,7 +1021,12 @@ public class HeaderParser extends AbstractParser {
                     if (prevCluster != null) {
                         String prevText = LayoutTokensUtil.toText(prevCluster.concatTokens()).toLowerCase();
                         if (prevText.contains("correspond") || prevText.contains("교신저자") || prevText.contains("교신 저자")) {
-                            biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                            if (biblio.getEmail().contains(clusterContent)) {
+                                biblio.setEmail(biblio.getEmail().replaceAll(clusterContent, "***"+clusterContent));
+                            } else {
+                                biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                            }
+                                
                             continue;
                         } else {
                             biblio.setEmail(biblio.getEmail() + "\t" + clusterNonDehypenizedContent);
@@ -1030,7 +1035,11 @@ public class HeaderParser extends AbstractParser {
                     if (nextCluster != null) {
                         String nextText = LayoutTokensUtil.toText(nextCluster.concatTokens()).toLowerCase();
                         if (nextText.contains("correspond") || nextText.contains("교신저자") || nextText.contains("교신 저자")) {
-                            biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                            if (biblio.getEmail().contains(clusterContent)) {
+                                biblio.setEmail(biblio.getEmail().replaceAll(clusterContent, "***"+clusterContent));
+                            } else {
+                                biblio.setEmail(biblio.getEmail() + "\t" + "***" + clusterNonDehypenizedContent);
+                            }
                         } else {
                             biblio.setEmail(biblio.getEmail() + "\t" + clusterNonDehypenizedContent);
                         }
