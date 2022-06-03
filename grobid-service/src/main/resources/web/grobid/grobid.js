@@ -102,6 +102,7 @@ var grobid = (function($) {
                 let container = new DataTransfer();
                 container.items.add(file);
                 $('#api_file')[0].files = container.files;
+                $('#input2')[0].files = container.files;
 
                 $('.file-list-li').remove()
                 let pdf_button = document.createElement("button");
@@ -902,7 +903,6 @@ var grobid = (function($) {
                             img_viewer.className = "img_viewer"
 
                             for(let k=0; k<tables.length; k++){
-                                console.log(tables[k])
                                 let preview;
                                 preview = capture(tables[k], file, false);
                                 if(preview){
@@ -1016,7 +1016,7 @@ var grobid = (function($) {
                                         children.style.display = 'none';
                                     }
                                 }
-                                preview.prepend(resultCanvas);
+                                preview.append(resultCanvas);
                                 preview.append(header);
                             })
 
