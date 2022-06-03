@@ -1772,7 +1772,7 @@ public class BiblioItem {
      * 
      * To be done: use a short text model to structure abstract
      */
-    public static final String[] ABSTRACT_PREFIXES = {"abstract", "summary", "résumé", "abrégé", "a b s t r a c t"};
+    public static final String[] ABSTRACT_PREFIXES = {"abstract", "summary", "résumé", "abrégé", "a b s t r a c t", "초록", "요약", "국문요약", "국문 요약", "적요"};
 
     public String cleanAbstract(String string) {
 
