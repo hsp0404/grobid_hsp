@@ -161,7 +161,14 @@ public class Figure {
     }
 
     public void appendLabel(String lab) {
-        label.append(lab);
+        lab = lab.replaceAll("[^0-9]", "");
+        if (label.length() == 0){
+            label.append(lab);
+        } else{
+            if (!label.toString().equals(lab)){
+                label = new StringBuilder(lab);
+            }
+        }
     }
 
     public String getLabel() {
