@@ -1074,6 +1074,49 @@ public class HeaderParser extends AbstractParser {
                     biblio.checkIdentifier();
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_KEYWORD)) {
+                if (clusterNonDehypenizedContent.contains("\n")){
+                    String[] split = clusterNonDehypenizedContent.split("\n");
+                    List<String> temp = new ArrayList<>();
+                    for (String s : split) {
+                        if (!s.equals("") && !s.equals(" ")) {
+                            temp.add(s);
+                        }
+                    }
+                    split = temp.toArray(new String[temp.size()]);
+                    StringBuilder sb = new StringBuilder("");
+                    if (split.length > 1) {
+                        for (int j = 0; j < split.length; j++) {
+                            if (j == split.length -1){
+                                sb.append(split[j]);
+                                break;
+                            }
+                            String[] s = split[j].split(" ");
+                            String[] s2 = split[j+1].split(" ");
+                            
+                            if(s.length == 0 || s2.length == 0)
+                                continue;
+
+                            String nowLastWord = s[s.length-1];
+                            String nextFirstWord = s2[0];
+
+                            Language nowLang = languageUtilities.runLanguageId(nowLastWord);
+                            Language nextLang = languageUtilities.runLanguageId(nextFirstWord);
+                            
+
+                            sb.append(split[j]);
+                            if (nowLang == null || nextLang == null)
+                                continue;
+                            if (!nowLang.getLang().equals(nextLang)) {
+                                sb.append(", ");
+                            }
+
+                        }
+                    }
+                    if(sb.length() > 0)
+                        clusterContent = sb.toString();
+                    
+//                    clusterContent = clusterNonDehypenizedContent.replaceAll("\n\n", ", ");
+                }
                 if (clusterContent.contains("(") && clusterContent.contains(")")) {
                     clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", ",").replaceAll(",,", ",");
                     

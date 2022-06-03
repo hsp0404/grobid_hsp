@@ -1871,11 +1871,32 @@ public class BiblioItem {
             res = res.substring(9);
         } else if (resLow.startsWith("mots clefs")) {
             res = res.substring(10);
-        } else if (resLow.startsWith("키워드") || resLow.startsWith("핵심어") || resLow.startsWith("중심어")) {
+        } else if (resLow.startsWith("index words")) {
+            res = res.substring(11);
+        } else if (resLow.startsWith("키워드") || resLow.startsWith("핵심어") || resLow.startsWith("중심어") || resLow.startsWith("주제어") || resLow.startsWith("색인어") || resLow.startsWith("주요어")) {
             res = res.substring(3);
-        } else if (resLow.startsWith("중심 단어") || resLow.startsWith("핵심 단어")) {
+        } else if (resLow.startsWith("중심 단어") || resLow.startsWith("핵심 단어") || resLow.startsWith("words")) {
             res = res.substring(5);
+        } else if (resLow.startsWith("색인")) {
+            res = res.substring(2);
+        } else if (resLow.startsWith("keyword")) {
+            res = res.substring(7);
         }
+        String[] koreanWords = {"중심단어", "핵심단어", "키워드", "핵심어", "중심어", "주제어", "색인어", "주요어", "색인"};
+        for (String k : koreanWords) {
+            char[] chars = k.toCharArray();
+            StringBuilder sb = new StringBuilder("[^가-힣a-zA-Z]");
+            for (char c : chars) {
+                sb.append(c);
+                sb.append(" ?");
+            }
+            sb.append("[^가-힣a-zA-Z]");
+            if (res.matches(".*"+sb.toString()+".*")) {
+                res = res.replaceAll(sb.toString(), "");
+                break;
+            }
+        }
+        
 		
         res = res.trim();
         if (res.startsWith(":") || res.startsWith("—") || res.startsWith("-")) {
@@ -1917,25 +1938,39 @@ public class BiblioItem {
 		
 		List<Keyword> result = new ArrayList<Keyword>();
 		// the list of possible keyword separators
-		List<String> separators = Arrays.asList(";","•", "ㆍ", "Á", "\n", ",", ".", ":", "/", "|");
-		for(String separator : separators) {
-	        StringTokenizer st = new StringTokenizer(string, separator);
-	        if (st.countTokens() > 2) {
-	            while (st.hasMoreTokens()) {
-					String res = st.nextToken().trim();
-					if (res.startsWith(":") || res.startsWith("：")) {
-			            res = res.substring(1);
-			        }
-					res = res.replace("\n", " ").replace("  ", " ");
-					Keyword keyw = new Keyword(res, type);
-					result.add(keyw);
-	            }
-				break;
-	        }
-		}
-		
-		return result;
-	}	
+        List<String> separators = Arrays.asList(";","•", "ㆍ", "Á", "\n", ",", ":", "|");
+        processSeparate(string, type, result, separators);
+
+        return result;
+	}
+
+    private static void processSeparate(String string, String type, List<Keyword> result, List<String> separators) {
+        StringBuilder sb = new StringBuilder();
+        for(String separator : separators) {
+            StringTokenizer st = new StringTokenizer(string, separator);
+            if (st.countTokens() >= 2) {
+                while (st.hasMoreTokens()) {
+                    String res = st.nextToken().trim();
+                    if(StringUtils.isEmpty(res))
+                        continue;
+                    if (res.toLowerCase().contains("jel classification") || res.toLowerCase().contains("jel 분류") || res.toLowerCase().contains("pacs number")) {                        break;
+                    }
+
+                    if (res.startsWith(":") || res.startsWith("：")) {
+                        res = res.substring(1);
+                    }
+                    res = res.replace("\n", " ").replace("  ", " ");
+                    Keyword keyw = new Keyword(res.trim(), type);
+                    if(!separators.stream().anyMatch(res::contains)){
+                        result.add(keyw);
+                    } else{
+                        processSeparate(res, type, result, separators);
+                    }
+                }
+                break;
+            }
+        }
+    }
 
     /**
      * Export to BibTeX format. Use "id" as BibTeX key.
