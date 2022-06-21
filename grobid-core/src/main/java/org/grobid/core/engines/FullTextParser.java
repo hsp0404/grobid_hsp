@@ -2028,8 +2028,18 @@ public class FullTextParser extends AbstractParser {
 					break;
 				}
 			}
+            
+            boolean isConsolidated = false;
 
-            results.add(result);
+            for (Figure figure : results) {
+                if (figure.equals(result)) {
+                    figure.consolidate(result);
+                    isConsolidated = true;
+                    break;
+                }
+            }
+            if(!isConsolidated)
+                    results.add(result);
             result.setId("" + (results.size() - 1));
         }
 
@@ -2187,43 +2197,18 @@ public class FullTextParser extends AbstractParser {
 
             ArrayList<Table> newLocalResults = new ArrayList<>();
 
-            if(localResults.size() == 2){
+            if(localResults.size() >= 2){
                 Table t1 = localResults.get(0);
                 Table t2 = localResults.get(1);
                 
                 if (t1.equals(t2)) {
-                    if (t1.getContentTokens().size() == 0 && t2.getContentTokens().size() > 0) {
-                        t2.setSubHeader(t1.getHeader());
-                        t2.setSubCaption(t1.getCaption());
-                        try {
-                            ArrayList<BoundingBox> temp = new ArrayList<>();
-                            temp.add(t2.getTextArea().get(0).boundBox(t1.getTextArea().get(0)));
-                            t2.setTextArea(temp);
-//                            t2.getTextArea().set(0,t2.getTextArea().get(0).boundBox(t1.getTextArea().get(0)));
-                        } catch (IllegalStateException e) {
-                            newLocalResults.add(t2);
-                        }
-                        newLocalResults.add(t2);
-                    } else if (t2.getContentTokens().size() == 0 && t1.getContentTokens().size() > 0) {
-                        t1.setSubHeader(t2.getHeader());
-                        t1.setSubCaption(t2.getCaption());
-                        try{
-                            ArrayList<BoundingBox> temp = new ArrayList<>();
-                            temp.add(t1.getTextArea().get(0).boundBox(t2.getTextArea().get(0)));
-                            t1.setTextArea(temp);
-                        } catch (IllegalStateException e) {
-                            newLocalResults.add(t1);
-                        }
+                        t1.consolidate(t2);
                         newLocalResults.add(t1);
-                    } else{
-                        newLocalResults.add(t1);
-                        newLocalResults.add(t2);
-                    }
                 } else{
                     newLocalResults.addAll(localResults);
                 }
             } else{
-                newLocalResults.addAll(localResults);
+                duplicateCheck(localResults, newLocalResults);
             }
             
 
@@ -2261,8 +2246,27 @@ public class FullTextParser extends AbstractParser {
 		return results;
 	}
 
+    private void duplicateCheck(List<Table> localResults, ArrayList<Table> newLocalResults) {
+        if(localResults == null || localResults.size() == 0)
+            return;
+        
+        boolean isConsolidated = false;
 
- 	/**
+        Table table = localResults.get(0);
+        for (Table t : newLocalResults) {
+            if (t.equals(table)) {
+                t.consolidate(table);
+                isConsolidated = true;
+                break;
+            }
+        }
+        
+        if(!isConsolidated)
+            newLocalResults.add(table);
+    }
+
+
+    /**
      * Create training data for the table as identified by the full text model.
      * Return the pair (TEI fragment, CRF raw data).
      */

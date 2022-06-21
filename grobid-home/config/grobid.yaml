@@ -58,7 +58,7 @@ grobid:
   # maximum concurrency allowed to GROBID server for processing parallel requests - change it according to your CPU/GPU capacities
   # for a production server running only GROBID, set the value slightly above the available number of threads of the server
   # to get best performance and security
-  concurrency: 10
+  concurrency: 4
   # when the pool is full, for queries waiting for the availability of a Grobid engine, this is the maximum time wait to try 
   # to get an engine (in seconds) - normally never change it
   poolMaxWait: 1
@@ -68,7 +68,7 @@ grobid:
     # delft installation path if Deep Learning architectures are used to implement one of the sequence labeling model, 
     # embeddings are usually compiled as lmdb under delft/data (this paramter is ignored if only featured-engineered CRF are used)
     install: "../delft"
-    pythonVirtualEnv:
+    pythonVirtualEnv: "/Users/hs/miniforge3/envs/py38"
 
   wapiti:
     # Wapiti global parameters
@@ -127,8 +127,8 @@ grobid:
         architecture: "BidLSTM_CRF"
 
     - name: "name-header"
-      engine: "wapiti"
-      #engine: "delft"
+#      engine: "wapiti"
+      engine: "delft"
       delft:
         # deep learning parameters
         architecture: "BidLSTM_CRF_FEATURES"
@@ -163,8 +163,8 @@ grobid:
       #engine: "delft"
       wapiti:
         # wapiti training parameters, they will be used at training time only
-        epsilon: 0.00001
-        window: 20
+        epsilon: 0.000001
+        window: 50
       delft:  
         # deep learning parameters
         architecture: "BidLSTM_CRF"

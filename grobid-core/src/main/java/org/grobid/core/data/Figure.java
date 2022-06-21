@@ -593,4 +593,34 @@ public class Figure {
     public void setUri(URI uri) {
         this.uri = uri;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        Figure o = (Figure) obj;
+        return (label.toString().equals(o.getLabel().toString()) && page == o.getPage());
+    }
+
+    @Override
+    public int hashCode() {
+        return label.hashCode();
+    }
+    
+    public void consolidate(Figure figure){
+        if (captionLayoutTokens == null)
+            captionLayoutTokens = new ArrayList<>();
+        if (layoutTokens == null)
+            layoutTokens = new ArrayList<>();
+        if(figure.getHeader() != null)
+            subHeader = figure.getHeader();
+        if(figure.getCaption() != null)
+            subCaption = figure.getCaption();
+        if(figure.getCaptionLayoutTokens() != null)
+            captionLayoutTokens.addAll(figure.getCaptionLayoutTokens());
+        if(figure.getContent() != null)
+            content.append(figure.getContent());
+        if(figure.getLayoutTokens() != null)
+            layoutTokens.addAll(figure.getLayoutTokens());
+        if(figure.getBlockPtrs() != null)
+            blockPtrs.addAll(figure.getBlockPtrs());
+    }
 }

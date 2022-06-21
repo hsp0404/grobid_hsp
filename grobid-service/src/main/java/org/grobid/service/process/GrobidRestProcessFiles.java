@@ -183,7 +183,7 @@ public class GrobidRestProcessFiles {
         return response;
     }
 
-    public Response getMetaData(Map<String, InputStream> paramMap, int consolidated) throws IOException {
+    public Response getMetaData(Map<String, InputStream> paramMap, int consolidated, int includeFiguresTables) throws IOException {
         LOGGER.debug(methodLogIn());
         String headerRetVal = null;
         Document doc;
@@ -342,13 +342,15 @@ public class GrobidRestProcessFiles {
                 if (result.getCopyright() != null) {
                     metaVO.setCopyright(result.getCopyright());
                 }
-                if (doc.getFigures() != null){
-                    metaVO.setFigures(doc.getFigures());
-                }
-                if (doc.getTables() != null) {
-                    List<Table> tables = doc.getTables();
-                    Collections.sort(tables);
-                    metaVO.setTables(tables);
+                if(includeFiguresTables == 1){
+                    if (doc.getFigures() != null){
+                        metaVO.setFigures(doc.getFigures());
+                    }
+                    if (doc.getTables() != null) {
+                        List<Table> tables = doc.getTables();
+                        Collections.sort(tables);
+                        metaVO.setTables(tables);
+                    }
                 }
 //                if (result.getFullAffiliations() != null) {
 //                    metaVO.setAffiliation(result.getFullAffiliations());

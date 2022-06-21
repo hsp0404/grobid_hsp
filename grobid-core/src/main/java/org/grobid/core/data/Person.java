@@ -793,9 +793,11 @@ public class Person {
         for(Person person : persons) {
             if (person.getLastName() == null || person.getLastName().trim().length() == 0) 
                 continue;
+            else if ((person.getFirstName() == null || person.getFirstName().trim().length() == 0) && person.getLastName().trim().length() <= 2) {
+                continue;
+            }
 //            else if ((person.getFirstName().equals("서") && person.getLastName().equals("론")) || (person.getFirstName().equals("론") && person.getLastName().equals("서")))
 //                continue;
-            else
                 result.add(person);
         }
 

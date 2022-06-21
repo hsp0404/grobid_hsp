@@ -173,4 +173,6 @@ public interface GrobidPaths {
     String PATH_TRAIN = "trainTempPdf";
     
     String PATH_SAVE_TEMP = "saveTempPdf";
+    
+    String RANDOM_ARTICLE = "randomArticle";
 }

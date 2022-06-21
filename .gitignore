@@ -78,5 +78,7 @@ grobid-home/models/dataseer
 grobid-home/models/*-bert*/
 grobid-home/models/*scibert*/
 
+grobid-trainer/resources/*
+
 Dockerfile.dataseer
 Dockerfile.software

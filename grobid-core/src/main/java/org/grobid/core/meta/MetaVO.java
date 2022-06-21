@@ -90,33 +90,10 @@ public class MetaVO {
     }
 
     public void setTitle(String title){
-        if (title.contains("//lang//")) {
-            String[] titles = title.split("//lang//");
-            for (String t : titles) {
-//                Language lang = detect(t);
-//                if (lang.name().equals("ENGLISH")){
-//                    this.title_en = t;
-//                }else{
-//                    this.title_ko = t;
-//                }
-                if (t.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-                    this.title_ko = t;
-                } else{
-                    this.title_en = t;
-                }
-            }
-        }else{
-//            Language lang = detect(title);
-//            if (lang.name().equals("ENGLISH")){
-//                this.title_en = title;
-//            }else{
-//                this.title_ko = title;
-//            }
-            if (title.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-                this.title_ko = title;
-            } else{
-                this.title_en = title;
-            }
+        if(title.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")){
+            title_ko = title;
+        } else {
+            title_en = title;
         }
     }
 

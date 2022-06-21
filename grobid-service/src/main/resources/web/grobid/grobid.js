@@ -87,6 +87,96 @@ var grobid = (function($) {
             $('.modal').fadeOut();
         })
         
+        $('#random_button').click(() => {
+            if($('.file-list-li').hasClass('li-processing')){
+                alert('처리중입니다.')
+                return;
+            }
+            
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/randomArticle', true);
+            xhr.onreadystatechange = (e) => {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        let artiId = e.target.response;
+                        let url = "https://www.koreascience.or.kr/article/" + artiId + ".pdf"
+                        let fileName = artiId;
+                        let req = new XMLHttpRequest();
+                        req.open("GET", url);
+                        req.responseType = "blob";
+
+                        req.onload = (e) => {
+                            let blob = req.response;
+                            let file = new File([blob], fileName+".pdf");
+
+                            let container = new DataTransfer();
+                            container.items.add(file);
+                            $('#api_file')[0].files = container.files;
+                            $('#input2')[0].files = container.files;
+                            $('#input')[0].files = container.files;
+
+                            $('.file-list-li').remove()
+                            let pdf_button = document.createElement("button");
+                            let down_button = document.createElement("button");
+                            let li = document.createElement("li");
+                            li.className = "file-list-li"
+                            li.innerText = fileName;
+
+                            pdf_button.innerText = "view pdf";
+                            pdf_button.id = "pdf0";
+                            pdf_button.className = "pdf-preview-btn"
+                            pdf_button.onclick = (e) => {
+                                e.stopPropagation()
+                                viewPdf(0);
+                            }
+
+                            down_button.innerText = "trainTemp에 저장하기";
+                            down_button.onclick = (e) => {
+                                e.stopPropagation()
+                                $('.modal').fadeIn();
+                                $('#savePdfBtn').unbind('click');
+                                $('#savePdfBtn').bind('click', () => {
+                                    let problems = []
+                                    $('input:checkbox[name="problem"]').each((i,e) => {
+                                        if($(e).is(":checked")){
+                                            problems.push(e.value);
+                                        }
+                                    })
+                                    if (problems.length > 0) {
+                                        fileName = "("+problems+")" + fileName
+                                    }
+                                    let form = document.getElementById('apiForm');
+                                    let formData = new FormData(form);
+                                    formData.append("fileName", fileName);
+                                    let xhr__ = new XMLHttpRequest();
+                                    xhr__.responseType = 'json';
+                                    xhr__.open('POST', "/api/saveTempPdf", true);
+                                    xhr__.onreadystatechange = (e) => {
+                                        if (xhr__.readyState === 4) {
+                                            if (xhr__.status === 200) {
+                                                alert('success save!')
+                                                $('.modal').fadeOut();
+                                            }
+                                        }
+                                    }
+                                    xhr__.send(formData);
+                                })
+                            }
+
+                            $(li).append(pdf_button);
+                            $(li).append(down_button);
+                            $('#file-list').append(li);
+                            $('#submitRequest4').click();
+
+                        };
+                        req.send();
+                        
+                    }
+                }
+            }
+            xhr.send();
+        })
+        
         $('#url-submit').click(() => {
             let url_ = $("#url-input").val()
             let url = "https://www.koreascience.or.kr/article/" + url_ + ".pdf"
@@ -103,6 +193,7 @@ var grobid = (function($) {
                 container.items.add(file);
                 $('#api_file')[0].files = container.files;
                 $('#input2')[0].files = container.files;
+                $('#input')[0].files = container.files;
 
                 $('.file-list-li').remove()
                 let pdf_button = document.createElement("button");
@@ -827,6 +918,11 @@ var grobid = (function($) {
 	}
 
     function submitQuery4(){
+        console.clear();
+        if($('.file-list-li').hasClass('li-processing')){
+            alert('처리중입니다.')
+            return;
+        }
         if(document.getElementById("api_file").files.length > 0){
             $('.file-list-li').each((i,e) => {
                 $(e).addClass("li-processing")
@@ -862,7 +958,7 @@ var grobid = (function($) {
                             let assetPath = response[i].assetPath;
 
                             // console.log(figures);
-                            // console.log(tables);
+                            console.log(tables);
                             // console.log(assetPath);
 
                             // spinner.className = 'loading'
@@ -1051,7 +1147,7 @@ var grobid = (function($) {
             preview.className = "preview-img";
             preview.id = index+"-preview-box-"+objectIndex;
             caption.className = "preview-caption";
-            caption.innerText = object.caption.replaceAll("\n", "");
+            caption.innerText = object.caption.trim().replaceAll("\n", "");
             preview.onclick = (e) => {
                 e.stopPropagation()
                 let width = e.target.naturalWidth;

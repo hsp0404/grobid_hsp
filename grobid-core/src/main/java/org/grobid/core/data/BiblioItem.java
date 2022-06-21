@@ -4398,4 +4398,124 @@ public class BiblioItem {
     public List<LayoutToken> getAbstractTokensWorkingCopy() {
         return abstractTokensWorkingCopy;
     }
+
+    public void titlePostProcess() {
+
+        if (title != null) {
+            if (title.contains("//lang//")) {
+                String[] titleSplit = title.split("//lang//");
+                if (titleSplit.length == 2) {
+                    String s1 = titleSplit[0];
+                    String s2 = titleSplit[1];
+                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
+                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+    
+                    if (s1.trim().equals(s2.trim())) {
+                        title = s1;
+                    } else {
+                        if (s1_lang.equals("ko") && s2_lang.equals("en")) {
+                            title = s1;
+                            if(english_title == null)
+                                english_title = s2;
+                            else if(!english_title.contains(s2))
+                                english_title = english_title + " " +s2;
+                        } else if(s1_lang.equals("en") && s2_lang.equals("ko")){
+                            title = s2;
+                            if(english_title == null)
+                                english_title = s1;
+                            else if(!english_title.contains(s1))
+                                english_title = english_title + " " +s1;
+                        } else{
+                            title = title.replaceAll("//lang//", " ");
+                        }
+                    }
+                } else if(titleSplit.length == 1){
+                    title = title.replaceAll("//lang//", " ");
+                } else {
+                    int endIndex = title.lastIndexOf("//lang//");
+                    String s1 = title.substring(0, endIndex);
+                    String s2 = title.substring(endIndex + 8, title.length());
+                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
+                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+
+                    if (s1_lang.equals("ko") && s2_lang.equals("en")) {
+                        title = s1;
+                        if(english_title == null)
+                            english_title = s2;
+                        else if(!english_title.contains(s2))
+                            english_title = english_title + " " +s2;
+                    } else if(s1_lang.equals("en") && s2_lang.equals("ko")){
+                        title = s2;
+                        if(english_title == null)
+                            english_title = s1;
+                        else if(!english_title.contains(s1))
+                            english_title = english_title + " " +s1;
+                    } else{
+                        title = title.replaceAll("//lang//", " ");
+                    }
+                    
+                    titlePostProcess();
+                    
+                    
+                }
+            }
+        }
+        if (english_title != null) {
+            if (english_title.contains("//lang//")) {
+                String[] titleSplit = title.split("//lang//");
+                if (titleSplit.length == 2) {
+                    String s1 = titleSplit[0];
+                    String s2 = titleSplit[1];
+                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
+                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+
+                    if (s1.trim().equals(s2.trim())) {
+                        english_title = s1;
+                    } else {
+                        if (s1_lang.equals("ko") && s2_lang.equals("en")) {
+                            english_title = s2;
+                            if(title == null)
+                                title = s1;
+                            else if(!title.contains(s1))
+                                title = title + " " +s1;
+                        } else if(s1_lang.equals("en") && s2_lang.equals("ko")){
+                            english_title = s1;
+                            if(title == null)
+                                title = s2;
+                            else if(!title.contains(s2))
+                                title = title + " " +s2;
+                        } else {
+                            english_title = english_title.replaceAll("//lang//", " ");
+                        }
+                    }
+                } else if(titleSplit.length == 1){
+                    title = title.replaceAll("//lang//", " ");
+                } else {
+                    int endIndex = title.lastIndexOf("//lang//");
+                    String s1 = title.substring(0, endIndex);
+                    String s2 = title.substring(endIndex + 8, title.length());
+                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
+                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+
+                    if (s1_lang.equals("ko") && s2_lang.equals("en")) {
+                        english_title = s2;
+                        if(title == null)
+                            title = s1;
+                        else if(!title.contains(s1))
+                            title = title + " " +s1;
+                    } else if(s1_lang.equals("en") && s2_lang.equals("ko")){
+                        english_title = s1;
+                        if(title == null)
+                            title = s2;
+                        else if(!title.contains(s2))
+                            title = title + " " +s2;
+                    } else{
+                        english_title = english_title.replaceAll("//lang//", " ");
+                    }
+
+                    titlePostProcess();
+                }
+            }
+        }
+    }
 }

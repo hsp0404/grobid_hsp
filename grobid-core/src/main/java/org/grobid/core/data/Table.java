@@ -25,7 +25,10 @@ import org.grobid.core.engines.label.TaggingLabel;
 import org.grobid.core.engines.citations.CalloutAnalyzer.MarkerType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 
 import nu.xom.Attribute;
 import nu.xom.Element;
@@ -444,5 +447,36 @@ public class Table extends Figure implements Comparable<Table> {
     public boolean equals(Object obj) {
         Table t = (Table) obj;
         return t.getLabel().equals(getLabel());
+    }
+    
+    public void consolidate(Table table){
+        if(contentTokens == null)
+            contentTokens = new ArrayList<>();
+        if(fullDescriptionTokens == null)
+            fullDescriptionTokens = new ArrayList<>();
+        if(captionLayoutTokens == null)
+            captionLayoutTokens = new ArrayList<>();
+        if(table.getHeader() != null)
+            subHeader = table.getHeader();
+        if(table.getCaption() != null)
+            subCaption = table.getCaption();
+        if(table.getContentTokens() != null)
+            contentTokens.addAll(table.getContentTokens());
+        if(table.getFullDescriptionTokens() != null)
+            fullDescriptionTokens.addAll(table.getFullDescriptionTokens());
+        if(table.getNote() != null)
+            note.append(table.getNote());
+        if(table.getCaptionLayoutTokens() != null)
+            captionLayoutTokens.addAll(table.getCaptionLayoutTokens());
+        if (table.getContent() != null) 
+            content.append(table.getContent());
+        if(table.getLayoutTokens() != null){
+            List<LayoutToken> temp = new ArrayList<>();
+            temp.addAll(getLayoutTokens());
+            temp.addAll(table.getLayoutTokens());
+            setLayoutTokens(temp);
+            setTextArea(Collections.singletonList(BoundingBoxCalculator.calculateOneBox(temp, true)));
+        }
+            
     }
 }

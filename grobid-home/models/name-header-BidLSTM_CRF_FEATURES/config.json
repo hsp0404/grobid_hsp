@@ -1,8 +1,8 @@
 {
-    "model_name": "name-citation-BidLSTM_CRF_FEATURES",
+    "model_name": "grobid-name-header-BidLSTM_CRF_FEATURES",
     "architecture": "BidLSTM_CRF_FEATURES",
     "embeddings_name": "glove-840B",
-    "char_vocab_size": 89,
+    "char_vocab_size": 401,
     "case_vocab_size": 8,
     "char_embedding_size": 25,
     "num_char_lstm_units": 25,
@@ -31,7 +31,7 @@
     "use_crf": true,
     "use_chain_crf": false,
     "fold_number": 1,
-    "batch_size": 20,
+    "batch_size": 5,
     "transformer_name": null,
     "use_ELMo": false,
     "features_map_to_index": {
@@ -77,11 +77,12 @@
         "18": {
             "COMMA": 109,
             "DOT": 110,
-            "HYPHEN": 111,
-            "NOPUNCT": 112,
-            "OPENBRACKET": 113,
-            "PUNCT": 114,
-            "QUOTE": 115
+            "ENDBRACKET": 111,
+            "HYPHEN": 112,
+            "NOPUNCT": 113,
+            "OPENBRACKET": 114,
+            "PUNCT": 115,
+            "QUOTE": 116
         }
     }
 }

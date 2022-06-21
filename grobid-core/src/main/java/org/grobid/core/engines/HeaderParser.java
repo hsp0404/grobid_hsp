@@ -863,6 +863,9 @@ public class HeaderParser extends AbstractParser {
                 /*if (biblio.getTitle() != null && isDifferentContent(biblio.getTitle(), clusterContent))
                     biblio.setTitle(biblio.getTitle() + clusterContent);
                 else*/
+                if (clusterNonDehypenizedContent.trim().contains(" \n\n")) {
+                    clusterContent = clusterNonDehypenizedContent.trim().replaceAll(" \n\n", "//lang//").replaceAll("\n", "");
+                }
                 if (biblio.getTitle() == null) {
                     biblio.setTitle(clusterContent);
                 }else{
@@ -1097,16 +1100,18 @@ public class HeaderParser extends AbstractParser {
                                 continue;
 
                             String nowLastWord = s[s.length-1];
+                            nowLastWord = String.valueOf(nowLastWord.charAt(nowLastWord.length() -1));
                             String nextFirstWord = s2[0];
+                            nextFirstWord = String.valueOf(nextFirstWord.charAt(0));
 
                             Language nowLang = languageUtilities.runLanguageId(nowLastWord);
                             Language nextLang = languageUtilities.runLanguageId(nextFirstWord);
                             
 
-                            sb.append(split[j]);
+                            sb.append(split[j].trim());
                             if (nowLang == null || nextLang == null)
                                 continue;
-                            if (!nowLang.getLang().equals(nextLang)) {
+                            if (!nowLang.getLang().equals(nextLang.getLang())) {
                                 sb.append(", ");
                             }
 
@@ -1152,13 +1157,20 @@ public class HeaderParser extends AbstractParser {
                 } else
                     biblio.setSubmission(clusterContent);
             } else if (clusterLabel.equals(TaggingLabels.HEADER_ENTITLE)) {
-                if (biblio.getEnglishTitle() != null) {
-//                    if (cluster.getFeatureBlock().contains("LINESTART")) {
-//                        biblio.setEnglishTitle(biblio.getEnglishTitle() + " " + clusterContent);
-//                    } else
-                    biblio.setEnglishTitle(biblio.getEnglishTitle() + clusterContent);
-                } else
-                    biblio.setEnglishTitle(clusterContent);
+                if (clusterContent.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+                    if (biblio.getTitle() == null) {
+                        biblio.setTitle(clusterContent);
+                    }else{
+                        if (!clusterContent.equals(biblio.getTitle())) {
+                            biblio.setTitle(biblio.getTitle() + "//lang//" + clusterContent);
+                        }
+                    }
+                } else {
+                    if (biblio.getEnglishTitle() != null) {
+                        biblio.setEnglishTitle(biblio.getEnglishTitle() + clusterContent);
+                    } else
+                        biblio.setEnglishTitle(clusterContent);
+                }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_VERSION)) {
                 if (biblio.getVersion() != null && isDifferentandNotIncludedContent(biblio.getVersion(), clusterNonDehypenizedContent)) {
                     biblio.setVersion(biblio.getVersion() + clusterNonDehypenizedContent);
@@ -1193,6 +1205,7 @@ public class HeaderParser extends AbstractParser {
             }*/
             i++;
         }
+        biblio.titlePostProcess();
         return biblio;
     }
 

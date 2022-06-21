@@ -23,15 +23,23 @@ import org.grobid.service.util.BibTexMediaType;
 import org.grobid.service.util.ExpectedResponseType;
 import org.grobid.service.util.GrobidRestUtils;
 import org.grobid.service.util.ZipUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
@@ -215,7 +223,8 @@ public class GrobidRestService implements GrobidPaths {
     @POST
     public Response getMeta(
         @FormDataParam(INPUT)FormDataBodyPart bodyPart,
-        @DefaultValue("0") @FormDataParam(CONSOLIDATE_HEADER) String consolidateHeader
+        @DefaultValue("0") @FormDataParam(CONSOLIDATE_HEADER) String consolidateHeader,
+        @DefaultValue("1") @FormDataParam(INCLUDE_FIGURES_TABLES) String includeFiguresTables
         ) throws Exception {
         LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
         for (BodyPart part : bodyPart.getParent().getBodyParts()) {
@@ -226,9 +235,41 @@ public class GrobidRestService implements GrobidPaths {
             }
         }
         return getMetaData(
-            paramMap, consolidateHeader
+            paramMap, consolidateHeader, includeFiguresTables
         );
     }
+
+    @Path(RANDOM_ARTICLE)
+    @Produces(MediaType.TEXT_PLAIN)
+    @GET
+    public Response randomArticle() throws IOException, ParseException {
+        Random rand = new Random();
+        int num = rand.nextInt(48);
+        Reader reader = new FileReader(GrobidProperties.getGrobidHomePath()+"/aida/"+"jsonResult-test"+num+".txt");
+        JSONParser parser = new JSONParser();
+        Object obj = parser.parse(reader);
+        JSONArray jsonArr = (JSONArray) obj;
+
+        int i1 = rand.nextInt(10000);
+        JSONObject j = (JSONObject) jsonArr.get(i1);
+
+        String docId = (String) j.get("doc_id");
+        
+        obj = null;
+        jsonArr = null;
+        j = null;
+        
+        System.gc();
+        
+        reader.close();
+        
+        return Response.ok()
+            .entity(docId)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN + "; charset=UTF-8")
+            .build();
+        
+    }
+     
 
     @Path(PATH_FULL_TEXT)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -289,9 +330,9 @@ public class GrobidRestService implements GrobidPaths {
         return restProcessFiles.saveTempPdf(inputStream, fileName);
     }
 
-    private Response getMetaData(Map<String, InputStream> paramMap, String consolidateHeader) throws Exception {
+    private Response getMetaData(Map<String, InputStream> paramMap, String consolidateHeader, String includeFiguresTables) throws Exception {
 
-        return restProcessFiles.getMetaData(paramMap, Integer.parseInt(consolidateHeader));
+        return restProcessFiles.getMetaData(paramMap, Integer.parseInt(consolidateHeader), Integer.parseInt(includeFiguresTables));
     }
 
     private Response processFulltext(InputStream inputStream,

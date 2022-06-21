@@ -926,7 +926,8 @@ public class Document implements Serializable {
 
     public void assignGraphicObjectsToFigures() {
         Multimap<Integer, Figure> figureMap = HashMultimap.create();
-
+        System.out.println("figure size : " + figures.size());
+        
         for (Figure f : figures) {
             figureMap.put(f.getPage(), f);
         }
@@ -1292,6 +1293,7 @@ public class Document implements Serializable {
                     || norm.startsWith("wykres")
                     || norm.startsWith("fuente")
                     || norm.startsWith("<그림") || norm.startsWith("그림") || norm.startsWith("[그림") || norm.startsWith("{그림")
+                    || norm.startsWith("(그림")
                     || norm.matches(".*그림[ .,-]?[0-9]+.*") || norm.matches(".*[fF]+ig[ .,-]?[0-9]+.*")) {
                 result.addAll(figBlock.getTokens());
 
