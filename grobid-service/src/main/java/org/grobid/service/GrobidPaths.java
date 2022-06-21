@@ -168,6 +168,8 @@ public interface GrobidPaths {
 
     String PATH_META_DATA = "getMeta";
 
+    String PATH_JATS = "getJats";
+
     String PATH_RANGE = "getRange";
 
     String PATH_TRAIN = "trainTempPdf";

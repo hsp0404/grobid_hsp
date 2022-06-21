@@ -216,6 +216,25 @@ public class GrobidRestService implements GrobidPaths {
         return processHeaderDocumentReturnBibTeX_post(inputStream, consolidate, includeRawAffiliations);
     }
 
+    @Path(PATH_JATS)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @POST
+    public Response getJats(
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart
+    ) throws Exception {
+        LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+        for (BodyPart part : bodyPart.getParent().getBodyParts()) {
+            if(part.getMediaType().toString().equals("application/pdf") || part.getMediaType().toString().equals("application/octet-stream")){
+                String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
+                InputStream input = part.getEntityAs(InputStream.class);
+                paramMap.put(fileName, input);
+            }
+        }
+
+        return restProcessFiles.getJatsXml(paramMap);
+    }
+
 
     @Path(PATH_META_DATA)
     @Consumes(MediaType.MULTIPART_FORM_DATA)

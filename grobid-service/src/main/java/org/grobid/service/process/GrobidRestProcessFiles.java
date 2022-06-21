@@ -25,6 +25,7 @@ import org.grobid.core.main.batch.GrobidMain;
 import org.grobid.core.meta.BiblVO;
 import org.grobid.core.meta.MetaVO;
 import org.grobid.core.meta.PositionVO;
+import org.grobid.core.transformation.xslt.JATSTransformer;
 import org.grobid.core.utilities.GrobidProperties;
 import org.grobid.core.utilities.IOUtilities;
 import org.grobid.core.utilities.KeyGen;
@@ -180,6 +181,95 @@ public class GrobidRestProcessFiles {
             e.printStackTrace();
         }
         
+        return response;
+    }
+    
+    public Response getJatsXml(Map<String, InputStream> paramMap) throws Exception{
+        LOGGER.debug(methodLogIn());
+        String headerRetVal = null;
+        Document doc;
+        Response response = null;
+        File originFile = null;
+        Engine engine = null;
+        List<BibDataSet> bibDataSetList = null;
+        Map<String, String> responseEntity = new HashMap<>();
+        int lastNum = 0;
+        try {
+
+            engine = Engine.getEngine(true);
+            // conservative check, if no engine is free in the pool a NoSuchElementException is normally thrown
+            if (engine == null) {
+                throw new GrobidServiceException(
+                    "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
+            }
+
+
+            for (Map.Entry<String, InputStream> map : paramMap.entrySet()) {
+                String fileName = map.getKey();
+                InputStream inputStream = map.getValue();
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+                originFile = IOUtilities.writeInputFile(dis);
+
+
+                byte[] digest = md.digest();
+
+                if (originFile == null) {
+                    LOGGER.error("The input file cannot be written.");
+                    throw new GrobidServiceException(
+                        "The input file cannot be written. ", Status.INTERNAL_SERVER_ERROR);
+                }
+
+                String md5Str = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                String assetPath = GrobidProperties.getTempPath().getPath() + File.separator + KeyGen.getKey();
+
+
+                GrobidAnalysisConfig config =
+                    GrobidAnalysisConfig.builder()
+                        .pdfAssetPath(new File(assetPath))
+                        .consolidateHeader(0)
+                        .build();
+
+                BiblioItem result;
+
+                doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+                String docTei = doc.getTei();
+                JATSTransformer jatsTransformer = new JATSTransformer();
+                String jats = jatsTransformer.transform(docTei);
+                System.out.println("jats = " + jats);
+                responseEntity.put(fileName, jats);
+                
+                
+            }
+
+            response = Response.status(Response.Status.OK)
+                .entity(responseEntity)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON + "; charset=UTF-8")
+                .build();
+        } catch (NoSuchElementException nseExp) {
+            LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
+            response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (GrobidException exp){
+            if (exp.getStatus() == GrobidExceptionStatus.NO_BLOCKS) {
+                response = Response.status(Status.NO_CONTENT).entity(exp.getMessage()).build();
+            } else{
+                LOGGER.error("An unexpected exception occurs. ", exp);
+                response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+            }
+        } catch (Exception exp) {
+            LOGGER.error("An unexpected exception occurs. ", exp);
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+        } finally {
+            if (originFile != null)
+                IOUtilities.removeTempFile(originFile);
+
+            if (engine != null) {
+                GrobidPoolingFactory.returnEngine(engine);
+            }
+        }
+
+        LOGGER.debug(methodLogOut());
         return response;
     }
 
