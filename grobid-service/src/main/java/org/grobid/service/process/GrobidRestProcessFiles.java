@@ -194,6 +194,7 @@ public class GrobidRestProcessFiles {
         List<BibDataSet> bibDataSetList = null;
         Map<String, String> responseEntity = new HashMap<>();
         int lastNum = 0;
+        String jats = null;
         try {
 
             engine = Engine.getEngine(true);
@@ -235,16 +236,16 @@ public class GrobidRestProcessFiles {
 
                 doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
                 String docTei = doc.getTei();
+                docTei.replaceAll("&", "&amp;");
                 JATSTransformer jatsTransformer = new JATSTransformer();
-                String jats = jatsTransformer.transform(docTei);
-                System.out.println("jats = " + jats);
+                jats = jatsTransformer.transform(docTei);
                 responseEntity.put(fileName, jats);
                 
                 
             }
 
             response = Response.status(Response.Status.OK)
-                .entity(responseEntity)
+                .entity(jats)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON + "; charset=UTF-8")
                 .build();
         } catch (NoSuchElementException nseExp) {
@@ -375,6 +376,14 @@ public class GrobidRestProcessFiles {
                 BiblioItem result;
 
                 doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+
+                String tei = doc.getTei();
+                if (doc.getResHeader().getEnglishTitle() != null) {
+                    System.out.println("HERE");
+                }
+                if (doc.getResHeader().getJournal() != null || doc.getResHeader().getOriginalJournal() != null) {
+                    System.out.println("HERE");
+                }
 
                 result = doc.getResHeader();
                 bibDataSetList = doc.getBibDataSets();

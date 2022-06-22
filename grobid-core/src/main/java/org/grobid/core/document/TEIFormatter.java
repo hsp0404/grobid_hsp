@@ -634,6 +634,11 @@ public class TEIFormatter {
             tei.append("\t\t\t\t\t<note type=\"submission\">" +
                     TextUtilities.HTMLEncode(biblio.getSubmission()) + "</note>\n");
         }
+        
+        if (biblio.getCopyright() != null) {
+            tei.append("\t\t\t\t\t<note type=\"copyright\">" +
+                TextUtilities.HTMLEncode(biblio.getCopyright()) + "</note>\n");
+        }
 
         if (biblio.getDedication() != null) {
             tei.append("\t\t\t\t\t<note type=\"dedication\">" + TextUtilities.HTMLEncode(biblio.getDedication())
@@ -754,57 +759,68 @@ public class TEIFormatter {
         if (textClassWritten)
             tei.append("\t\t\t</textClass>\n");
 
-        String abstractText = biblio.getAbstract();
-
-        Language resLang = null;
-        if (abstractText != null) {
-            LanguageUtilities languageUtilities = LanguageUtilities.getInstance();
-            resLang = languageUtilities.runLanguageId(abstractText);
+        String abstractT = biblio.getAbstract();
+        List<String> abstractSplit = new ArrayList<>();
+        if (abstractT.contains("//lang//")) {
+            String[] split = abstractT.split("//lang//");
+            abstractSplit.addAll(Arrays.asList(split));
+        } else {
+            abstractSplit.add(abstractT);
         }
-        if (resLang != null) {
-            String resL = resLang.getLang();
-            if (!resL.equals(doc.getLanguage())) {
+
+
+        for (String abstractText : abstractSplit) {
+            Language resLang = null;
+            if (abstractText != null) {
+                LanguageUtilities languageUtilities = LanguageUtilities.getInstance();
+                resLang = languageUtilities.runLanguageId(abstractText);
+            }
+            if (resLang != null) {
+                String resL = resLang.getLang();
                 tei.append("\t\t\t<abstract xml:lang=\"").append(resL).append("\">\n");
+//                if (!resL.equals(doc.getLanguage())) {
+//                } else {
+//                    tei.append("\t\t\t<abstract>\n");
+//                }
+            } else if ((abstractText == null) || (abstractText.length() == 0)) {
+                tei.append("\t\t\t<abstract/>\n");
             } else {
                 tei.append("\t\t\t<abstract>\n");
             }
-        } else if ((abstractText == null) || (abstractText.length() == 0)) {
-            tei.append("\t\t\t<abstract/>\n");
-        } else {
-            tei.append("\t\t\t<abstract>\n");
-        }
 
-        if ((abstractText != null) && (abstractText.length() != 0)) {
-            if ( (biblio.getLabeledAbstract() != null) && (biblio.getLabeledAbstract().length() > 0) ) {
-                // we have available structured abstract, which can be serialized as a full text "piece"
-                StringBuilder buffer = new StringBuilder();
-                try {
-                    buffer = toTEITextPiece(buffer,
-                                            biblio.getLabeledAbstract(),
-                                            biblio,
-                                            bds,
-                                            false,
-                                            new LayoutTokenization(biblio.getLayoutTokens(TaggingLabels.HEADER_ABSTRACT)),
-                                            null, 
-                                            null, 
-                                            null, 
-                                            markerTypes,
-                                            doc,
-                                            config); // no figure, no table, no equation
-                } catch(Exception e) {
-                    throw new GrobidException("An exception occurred while serializing TEI.", e);
-                }
-                tei.append(buffer.toString());
-            } else {
-                tei.append("\t\t\t\t<p");
-                if (generateIDs) {
-                    String divID = KeyGen.getKey().substring(0, 7);
-                    tei.append(" xml:id=\"_" + divID + "\"");
-                }
-                tei.append(">").append(TextUtilities.HTMLEncode(abstractText)).append("</p>");
-            }
+            if ((abstractText != null) && (abstractText.length() != 0)) {
+//                if ( (biblio.getLabeledAbstract() != null) && (biblio.getLabeledAbstract().length() > 0) ) {
+                    // we have available structured abstract, which can be serialized as a full text "piece"
+//                    StringBuilder buffer = new StringBuilder();
+//                    try {
+//                        buffer = toTEITextPiece(buffer,
+//                                                biblio.getLabeledAbstract(),
+//                                                biblio,
+//                                                bds,
+//                                                false,
+//                                                new LayoutTokenization(biblio.getLayoutTokens(TaggingLabels.HEADER_ABSTRACT)),
+//                                                null, 
+//                                                null, 
+//                                                null, 
+//                                                markerTypes,
+//                                                doc,
+//                                                config); // no figure, no table, no equation
+//                    } catch(Exception e) {
+//                        throw new GrobidException("An exception occurred while serializing TEI.", e);
+//                    }
+//                    tei.append(buffer.toString());
+//                } else {
+//                    tei.append("\t\t\t\t<p");
+//                    if (generateIDs) {
+//                        String divID = KeyGen.getKey().substring(0, 7);
+//                        tei.append(" xml:id=\"_" + divID + "\"");
+//                    }
+//                    tei.append(">").append(TextUtilities.HTMLEncode(abstractText)).append("</p>");
+//                }
 
+            tei.append(abstractText);
             tei.append("\n\t\t\t</abstract>\n");
+            }
         }
 
         tei.append("\t\t</profileDesc>\n");

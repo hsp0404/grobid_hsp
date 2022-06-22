@@ -218,7 +218,7 @@ public class GrobidRestService implements GrobidPaths {
 
     @Path(PATH_JATS)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_XML)
     @POST
     public Response getJats(
         @FormDataParam(INPUT)FormDataBodyPart bodyPart
