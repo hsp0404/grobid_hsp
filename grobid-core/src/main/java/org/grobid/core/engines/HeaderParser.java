@@ -112,23 +112,26 @@ public class HeaderParser extends AbstractParser {
 
                 // language identification
                 StringBuilder contentSample = new StringBuilder();
-                if (resHeader.getTitle() != null) {
-                    contentSample.append(resHeader.getTitle());
-                }
-                if (resHeader.getAbstract() != null) {
-                    contentSample.append("\n");
-                    contentSample.append(resHeader.getAbstract());
-                }
-                if (contentSample.length() < 200) {
                     // we can exploit more textual content to ensure that the language identification will be
                     // correct
-                    SortedSet<DocumentPiece> documentBodyParts = doc.getDocumentPart(SegmentationLabels.BODY);
-                    if (documentBodyParts != null) {
-                        String stringSample = Document.getTokenizationParts(documentBodyParts, tokenizations)
-                            .stream().map(LayoutToken::toString)
-                            .collect(Collectors.joining(" "));
-
-                        contentSample.append(stringSample);
+                SortedSet<DocumentPiece> documentBodyParts = doc.getDocumentPart(SegmentationLabels.BODY);
+                if (documentHeaderParts != null){
+                    for (DocumentPiece documentBodyPart : documentBodyParts) {
+                        for (int i = documentBodyPart.getLeft().getTokenDocPos(); i < documentBodyPart.getRight().getTokenDocPos(); i++) {
+                            contentSample.append(tokenizations.get(i).getText());
+                            contentSample.append(" ");
+                        }
+                        if(contentSample.length() > 200){
+                            break;
+                        }
+                    }
+                } else {
+                    if (resHeader.getTitle() != null) {
+                        contentSample.append(resHeader.getTitle());
+                    }
+                    if (resHeader.getAbstract() != null) {
+                        contentSample.append("\n");
+                        contentSample.append(resHeader.getAbstract());
                     }
                 }
                 Language langu = languageUtilities.runLanguageId(contentSample.toString());
