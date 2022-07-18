@@ -289,9 +289,9 @@ public class TEIFormatter {
 
         // title
         String title = biblio.getTitle();
-        String language = biblio.getLanguage();
         String english_title = biblio.getEnglishTitle();
         if (title != null) {
+            String language = LanguageUtilities.getInstance().runLanguageId(title).getLang();
             tei.append("\t\t\t\t\t\t<title");
             /*if ( (bookTitle == null) & (journal == null) )
                     tei.append(" level=\"m\"");
@@ -305,7 +305,7 @@ public class TEIFormatter {
 
             // here check the language ?
             if (english_title == null)
-                tei.append(">" + TextUtilities.HTMLEncode(title) + "</title>\n");
+                tei.append(" xml:lang=\"" + language + "\">" + TextUtilities.HTMLEncode(title) + "</title>\n");
             else
                 tei.append(" xml:lang=\"" + language + "\">" + TextUtilities.HTMLEncode(title) + "</title>\n");
         }
@@ -759,7 +759,7 @@ public class TEIFormatter {
         if (textClassWritten)
             tei.append("\t\t\t</textClass>\n");
 
-        String abstractT = biblio.getAbstract();
+        String abstractT = biblio.getAbstract() == null ? "" : biblio.getAbstract();
         List<String> abstractSplit = new ArrayList<>();
         if (abstractT.contains("//lang//")) {
             String[] split = abstractT.split("//lang//");

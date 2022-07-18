@@ -926,7 +926,7 @@ public class Document implements Serializable {
 
     public void assignGraphicObjectsToFigures() {
         Multimap<Integer, Figure> figureMap = HashMultimap.create();
-        System.out.println("figure size : " + figures.size());
+//        System.out.println("figure size : " + figures.size());
         
         for (Figure f : figures) {
             figureMap.put(f.getPage(), f);

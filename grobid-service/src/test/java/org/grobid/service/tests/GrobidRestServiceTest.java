@@ -28,6 +28,7 @@ import org.grobid.core.data.Figure;
 import org.grobid.core.data.Table;
 import org.grobid.core.exceptions.GrobidException;
 import org.grobid.core.layout.LayoutToken;
+import org.grobid.core.main.GrobidHomeFinder;
 import org.grobid.core.meta.AuthorVO;
 import org.grobid.core.meta.MetaVO;
 import org.grobid.core.utilities.GrobidProperties;
@@ -360,7 +361,7 @@ public class GrobidRestServiceTest {
                             System.out.println("non existing.. but not save");
                             paramMap.put(doc_id, in);
                         }
-                        Object response = restProcessFiles.getMetaData(paramMap, 0).getEntity();
+                        Object response = restProcessFiles.getMetaData(paramMap, 0, 0).getEntity();
                         if (response instanceof List) {
                             return (List<MetaVO>) response;
                         }
@@ -432,8 +433,8 @@ public class GrobidRestServiceTest {
         int resultNumber = rand.nextInt(48);
         System.out.println("jsonResult-test"+resultNumber+".txt 파일을 불러옵니다");
 
-        Reader reader = new FileReader("/Users/hs/Desktop/json-separate/jsonResult-test"+resultNumber+".txt");
-//        Reader reader = new FileReader("/Users/hs/Desktop/json-separate/jsonResult-test13.txt");
+        Reader reader = new FileReader(GrobidProperties.getGrobidHomePath()+"/aida/jsonResult-test"+resultNumber+".txt");
+//        Reader reader = new FileReader(GrobidProperties.getGrobidHomePath()+"/aida/jsonResult-test13.txt");
 
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(reader);
@@ -527,7 +528,7 @@ public class GrobidRestServiceTest {
         List<String> list = new ArrayList<>();
         File[] files = file.listFiles();
         for (File f : files) {
-            if (StringUtils.endsWith(f.getName(),"pdf")) {
+            if (StringUtils.endsWith(f.getName(), "pdf")) {
                 list.add(f.getName().replaceAll(".pdf", ""));
             }
         }
@@ -537,9 +538,9 @@ public class GrobidRestServiceTest {
 
         JSONParser parser = new JSONParser();
         for (int i = 0; i < 48; i++) {
-            Reader reader = new FileReader("/Users/hs/Desktop/json-separate/jsonResult-test"+i+".txt");
+            Reader reader = new FileReader(GrobidProperties.getGrobidHomePath()+"/aida/jsonResult-test" + i + ".txt");
             Object obj = parser.parse(reader);
-            
+
             parser.reset();
             reader.close();
         }
@@ -553,7 +554,7 @@ public class GrobidRestServiceTest {
         int resultNumber = rand.nextInt(48);
         System.out.println("jsonResult-test"+resultNumber+".txt 파일을 불러옵니다");
         
-        Reader reader = new FileReader("/Users/hs/Desktop/json-separate/jsonResult-test"+resultNumber+".txt");
+        Reader reader = new FileReader(GrobidProperties.getGrobidHomePath()+"/aida/jsonResult-test"+resultNumber+".txt");
 
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(reader);
@@ -673,10 +674,7 @@ public class GrobidRestServiceTest {
                     keyword_ko.append(keyword);
                     keyword_ko.append(";");
                 } else{
-                    if (keyword_en.toString().contains(";"+keyword + ";")) {
-                        keyword_ko.append(keyword);
-                        keyword_ko.append(";");
-                    } else{
+                    if(!keyword_en.toString().contains(keyword+";")){
                         keyword_en.append(keyword);
                         keyword_en.append(";");
                     }
@@ -688,10 +686,12 @@ public class GrobidRestServiceTest {
             if (authorsObj.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
                 for (AuthorVO author : authors) {
                     sb.append(author.getName_kr());
+                    sb.append(" ");
                 }
             } else{
                 for (AuthorVO author : authors) {
                     sb.append(author.getName_en());
+                    sb.append(" ");
                 }
                 String[] split = authorsObj.split(";");
                 StringBuilder sbb = new StringBuilder();
@@ -784,8 +784,8 @@ public class GrobidRestServiceTest {
         int keywordTotal = 0;
         int consolidatedAvg = 0;
 
-        int iter = 10;
-        int size = 100;
+        int iter = 20;
+        int size = 50;
         
         for (int i = 0; i < iter; i++) {
             System.out.println((i+1) + " / " + iter + "번째..");
@@ -820,6 +820,18 @@ public class GrobidRestServiceTest {
             System.out.println("author      : " + ((double) authorMatch/authorTotal)*100);
         if (keywordTotal > 0)
             System.out.println("keyword      : " + ((double) keywordMatch/keywordTotal)*100);
+        if (titleTotal > 0)
+            System.out.println("total title : " + titleTotal);
+            System.out.println("match title : " + titleMatch);
+        if (abstractTotal > 0)
+            System.out.println("total abstract : " + abstractTotal);
+            System.out.println("match abstract : " + abstractMatch);
+        if (authorTotal > 0)
+            System.out.println("total author      : " + authorTotal);
+            System.out.println("match author      : " + authorMatch);
+        if (keywordTotal > 0)
+            System.out.println("total keyword      : " + keywordTotal);
+            System.out.println("match keyword      : " + keywordMatch);
 
 //        System.out.println("author      : " + authorAvg / iter);
 //        System.out.println("consolidated: " + consolidatedAvg);
@@ -829,6 +841,7 @@ public class GrobidRestServiceTest {
         for (File f : files) {
             f.delete();
         }
+        
     }
     
     
@@ -886,15 +899,14 @@ public class GrobidRestServiceTest {
                     if (StringUtils.isNotEmpty(koTarget)) {
                         System.out.println("------------error case(kr)------------");
                         System.out.println("expected        : " + koReal);
-                        System.out.println("expected(clean) : " + clean(koReal));
+//                        System.out.println("expected(clean) : " + clean(koReal));
                         System.out.println("result          : " + koTarget);
-                        System.out.println("result(clean)   : " + clean(koTarget));
+//                        System.out.println("result(clean)   : " + clean(koTarget));
                     }
                 }
             }
             if (enReal != null) {
                 if (enReal.contains("$") || enReal.contains("$")) {
-                    System.out.println("$");
                 }
                 n++;
                 if (clean(enReal).equalsIgnoreCase(clean(enTarget))){
@@ -903,20 +915,20 @@ public class GrobidRestServiceTest {
                     similarity++;
                 } else{
                     System.out.println(docId);
-//                    if (copy) {
-//                        try {
-//                            System.out.println(docId + ".pdf .. 불일치하여 trainTmp 폴더에 저장합니다");
-//                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
+                    if (copy) {
+                        try {
+                            System.out.println(docId + ".pdf .. 불일치하여 trainTmp 폴더에 저장합니다");
+                            FileUtils.copyFile(new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf"), new File("/Users/hs/Desktop/grobid_hsp/grobid-home/trainTmp/pdf/" + docId + ".pdf"));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     if (StringUtils.isNotEmpty(enTarget)) {
                         System.out.println("------------error case(en)------------");
                         System.out.println("expected        : " + enReal);
-                        System.out.println("expected(clean) : " + clean(enReal));
+//                        System.out.println("expected(clean) : " + clean(enReal));
                         System.out.println("result          : " + enTarget);
-                        System.out.println("result(clean)   : " + clean(enTarget));
+//                        System.out.println("result(clean)   : " + clean(enTarget));
                     }
 //                    new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf").delete();
                 }
@@ -959,9 +971,9 @@ public class GrobidRestServiceTest {
                         System.out.println("------------error case------------");
                         System.out.println("docId           : " + docId);
                         System.out.println("expected        : " + real);
-                        System.out.println("expected(clean) : " + clean(real));
+//                        System.out.println("expected(clean) : " + clean(real));
                         System.out.println("result          : " + target);
-                        System.out.println("result(clean)   : " + clean(target));
+//                        System.out.println("result(clean)   : " + clean(target));
                     }
                 }
             }
@@ -1070,9 +1082,9 @@ public class GrobidRestServiceTest {
 //                || StringUtils.endsWith(f.getName(), "segmentation") || StringUtils.endsWith(f.getName(), "segmentation.tei.xml")) {
 //            if (StringUtils.endsWith(f.getName(), "segmentation") || StringUtils.endsWith(f.getName(), "segmentation.tei.xml")) {
 //            if (StringUtils.endsWith(f.getName(), "fulltext") || StringUtils.endsWith(f.getName(), "fulltext.tei.xml")) {
-            if (StringUtils.endsWith(f.getName(), "table") || StringUtils.endsWith(f.getName(), "table.tei.xml")) {
+//            if (StringUtils.endsWith(f.getName(), "table") || StringUtils.endsWith(f.getName(), "table.tei.xml")) {
 //            if (StringUtils.endsWith(f.getName(), "figure") || StringUtils.endsWith(f.getName(), "figure.tei.xml")) {
-//            if (StringUtils.endsWith(f.getName(), "header") || StringUtils.endsWith(f.getName(), "header.tei.xml")) {
+            if (StringUtils.endsWith(f.getName(), "header") || StringUtils.endsWith(f.getName(), "header.tei.xml")) {
                 
             } else{
                 f.delete();

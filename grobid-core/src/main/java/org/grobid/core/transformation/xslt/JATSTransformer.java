@@ -8,17 +8,20 @@ import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 
 public class JATSTransformer {
 
-    public final static String xsltPath = "/xslt/grobid-jats.xsl";
+    private static String grobidXsltPath = "/xslt/grobid-jats.xsl";
+    private static String bodyXsltPath = "/xslt/body.xsl";
+    private static String citationXsltPath = "/xslt/citations.xsl";
 
     private static Transformer t;
-
-    static {
+    
+    public JATSTransformer() throws IOException {
         net.sf.saxon.TransformerFactoryImpl tf = new net.sf.saxon.TransformerFactoryImpl();
         tf.setURIResolver(new URIResolver() {
             @Override
@@ -27,12 +30,47 @@ public class JATSTransformer {
             }
         });
 
-        InputStream is = JATSTransformer.class.getResourceAsStream(xsltPath);
+        InputStream is = JATSTransformer.class.getResourceAsStream(grobidXsltPath);
 
         try {
             t = tf.newTransformer(new StreamSource(is));
         } catch (TransformerConfigurationException e) {
             throw new RuntimeException(e);
+        }  finally {
+            if (is != null) {
+                is.close();
+            }
+        }
+        
+    }
+
+    public JATSTransformer(String key) throws IOException {
+        net.sf.saxon.TransformerFactoryImpl tf = new net.sf.saxon.TransformerFactoryImpl();
+        tf.setURIResolver(new URIResolver() {
+            @Override
+            public Source resolve(String href, String base) throws TransformerException {
+                return new StreamSource(this.getClass().getResource("/xslt/" + href).getPath());
+            }
+        });
+        InputStream is = null;
+
+        if(key.equals("body"))
+            is = JATSTransformer.class.getResourceAsStream(bodyXsltPath);
+        else if(key.equals("citation")) {
+            is = JATSTransformer.class.getResourceAsStream(citationXsltPath);
+        } else {
+            is = JATSTransformer.class.getResourceAsStream(grobidXsltPath);
+        }
+        
+
+        try {
+            t = tf.newTransformer(new StreamSource(is));
+        } catch (TransformerConfigurationException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null) {
+                is.close();
+            }
         }
     }
 

@@ -218,7 +218,7 @@ public class GrobidRestService implements GrobidPaths {
 
     @Path(PATH_JATS)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Produces(MediaType.APPLICATION_XML)
+    @Produces(MediaType.TEXT_PLAIN)
     @POST
     public Response getJats(
         @FormDataParam(INPUT)FormDataBodyPart bodyPart
@@ -231,8 +231,52 @@ public class GrobidRestService implements GrobidPaths {
                 paramMap.put(fileName, input);
             }
         }
+        Response response = restProcessFiles.getJatsXml(paramMap);
+        response.getHeaders().put(HttpHeaders.CONTENT_TYPE, Collections.singletonList(MediaType.TEXT_PLAIN + "; charset=UTF-8"));
 
-        return restProcessFiles.getJatsXml(paramMap);
+        return response;
+    }
+    
+    @Path(PATH_JATS_PREVIEW)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_HTML)
+    @POST
+    public Response getJatsPreview(
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart
+    ) throws Exception {
+        LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+        for (BodyPart part : bodyPart.getParent().getBodyParts()) {
+            if(part.getMediaType().toString().equals("application/pdf") || part.getMediaType().toString().equals("application/octet-stream")){
+                String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
+                InputStream input = part.getEntityAs(InputStream.class);
+                paramMap.put(fileName, input);
+            }
+        }
+        Response response = restProcessFiles.getJatsPreview(paramMap);
+        response.getHeaders().put(HttpHeaders.CONTENT_TYPE, Collections.singletonList(MediaType.TEXT_HTML + "; charset=UTF-8"));
+
+        return response;
+    }
+
+    @Path(PATH_JATS)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_XML)
+    @POST
+    public Response getJatsXml(
+        @FormDataParam(INPUT)FormDataBodyPart bodyPart
+    ) throws Exception {
+        LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+        for (BodyPart part : bodyPart.getParent().getBodyParts()) {
+            if(part.getMediaType().toString().equals("application/pdf") || part.getMediaType().toString().equals("application/octet-stream")){
+                String fileName = new String (part.getContentDisposition().getFileName().getBytes("iso-8859-1"), "UTF-8");
+                InputStream input = part.getEntityAs(InputStream.class);
+                paramMap.put(fileName, input);
+            }
+        }
+        Response response = restProcessFiles.getJatsXml(paramMap);
+        response.getHeaders().put(HttpHeaders.CONTENT_TYPE, Collections.singletonList(MediaType.APPLICATION_XML + "; charset=UTF-8"));
+
+        return response;
     }
 
 
@@ -427,15 +471,15 @@ public class GrobidRestService implements GrobidPaths {
     }
 
     @Path(PATH_GET_IMAGE)
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    @POST
+    @GET
     public Response getImage(
-        @FormDataParam("path") String path
+        @QueryParam("path") String path
     ) throws Exception {
         File file = new File(path);
+        String fileName = file.getName();
         Response.ResponseBuilder responseBuilder = Response.ok((Object) file);
-        responseBuilder.header("Content-Disposition", "attachment; filename=figure.png");
+        responseBuilder.header("Content-Disposition", "attachment; filename="+ fileName +".png");
         return responseBuilder.build();
     }
 

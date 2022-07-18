@@ -1080,55 +1080,69 @@ public class HeaderParser extends AbstractParser {
                     biblio.checkIdentifier();
                 }
             } else if (clusterLabel.equals(TaggingLabels.HEADER_KEYWORD)) {
-                if (clusterNonDehypenizedContent.contains("\n")){
-                    String[] split = clusterNonDehypenizedContent.split("\n");
-                    List<String> temp = new ArrayList<>();
-                    for (String s : split) {
-                        if (!s.equals("") && !s.equals(" ")) {
-                            temp.add(s);
-                        }
-                    }
-                    split = temp.toArray(new String[temp.size()]);
-                    StringBuilder sb = new StringBuilder("");
-                    if (split.length > 1) {
-                        for (int j = 0; j < split.length; j++) {
-                            if (j == split.length -1){
-                                sb.append(split[j]);
-                                break;
-                            }
-                            String[] s = split[j].split(" ");
-                            String[] s2 = split[j+1].split(" ");
-                            
-                            if(s.length == 0 || s2.length == 0)
-                                continue;
-
-                            String nowLastWord = s[s.length-1];
-                            nowLastWord = String.valueOf(nowLastWord.charAt(nowLastWord.length() -1));
-                            String nextFirstWord = s2[0];
-                            nextFirstWord = String.valueOf(nextFirstWord.charAt(0));
-
-                            Language nowLang = languageUtilities.runLanguageId(nowLastWord);
-                            Language nextLang = languageUtilities.runLanguageId(nextFirstWord);
-                            
-
-                            sb.append(split[j].trim());
-                            if (nowLang == null || nextLang == null)
-                                continue;
-                            if (!nowLang.getLang().equals(nextLang.getLang())) {
-                                sb.append(", ");
-                            }
-
-                        }
-                    }
-                    if(sb.length() > 0)
-                        clusterContent = sb.toString();
-                    
-//                    clusterContent = clusterNonDehypenizedContent.replaceAll("\n\n", ", ");
-                }
                 if (clusterContent.contains("(") && clusterContent.contains(")")) {
                     clusterContent = clusterContent.replaceAll("\\(", ", ").replaceAll("\\)", ",").replaceAll(",,", ",");
-                    
+                    clusterNonDehypenizedContent = clusterNonDehypenizedContent.replaceAll("\\(", ", ").replaceAll("\\)", ",").replaceAll(",,", ",");
                 }
+
+                StringTokenizer st = new StringTokenizer(clusterNonDehypenizedContent, "\n");
+                String[] split = new String[st.countTokens()];
+                int k = 0;
+                while (st.hasMoreTokens()) {
+                    split[k] = st.nextToken();
+                    k++;
+                }
+                if(split.length == 2){
+                    for (int z = 0; z < split.length-1; z++) {
+                        String prev = split[z];
+                        String next = split[z+1];
+                        String prevLastWord = null;
+                        String nextFirstWord = null;
+
+                        int j = 1;
+                        String[] s1 = prev.split(" ");
+                        String[] s2 = next.split(" ");
+                        if(s1.length == 0 || s2.length == 0){
+                            continue;
+                        }
+                        while(prevLastWord == null){
+                            String word = s1[s1.length - j];
+                            if (word.length() >= 1 && word.matches("[가-힣a-zA-Z]+")) {
+                                prevLastWord = word;
+                            } else {
+                                j++;
+                            }
+                            if(j <= s1.length+1){
+                                break;
+                            }
+                        }
+                        j = 0;
+                        while(nextFirstWord == null) {
+                            String word = s2[j];
+                            if (word.length() >= 1 && word.matches("[가-힣a-zA-Z]+")) {
+                                nextFirstWord = word;
+                            } else{
+                                j++;
+                            }
+                            if(j <= s2.length+1){
+                                break;
+                            }
+                        }
+
+                        if (prevLastWord != null && nextFirstWord != null) {
+                            Language prevLang = languageUtilities.runLanguageId(prevLastWord);
+                            Language nextLang = languageUtilities.runLanguageId(nextFirstWord);
+
+                            if(prevLang != null && nextLang != null){
+                                if((prevLang.getLang().equals("ko") && !nextLang.getLang().equals("ko")) ||(!prevLang.getLang().equals("ko") && nextLang.getLang().equals("ko"))){
+                                    clusterContent = prev + ", " + next;
+                                }
+                            }
+
+                        }
+                    }
+                }
+
                 if (biblio.getKeyword() != null) {
                     biblio.setKeyword(biblio.getKeyword() + ", " + clusterContent);
                 } else {
@@ -1170,7 +1184,9 @@ public class HeaderParser extends AbstractParser {
                     }
                 } else {
                     if (biblio.getEnglishTitle() != null) {
-                        biblio.setEnglishTitle(biblio.getEnglishTitle() + clusterContent);
+                        if (!biblio.getEnglishTitle().replaceAll(" ", "").equalsIgnoreCase(clusterContent.replaceAll(" ", ""))) {
+                            biblio.setEnglishTitle(biblio.getEnglishTitle() + clusterContent);
+                        }
                     } else
                         biblio.setEnglishTitle(clusterContent);
                 }

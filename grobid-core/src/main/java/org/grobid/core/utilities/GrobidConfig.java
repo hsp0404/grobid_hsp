@@ -14,6 +14,7 @@ public class GrobidConfig {
         public String grobidHome = "grobid-home";
         public String temp = "./tmp";
         public String nativelibrary = "./lib";
+        public String modelLanguage;
 
         public PdfParameters pdf;
         public ConsolidationParameters consolidation;

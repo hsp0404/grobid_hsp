@@ -50,6 +50,7 @@ var grobid = (function($) {
 
         // for patent processing
         $("#divRestIII").hide();
+        $("#divRestIV").hide();
 
 		$("#divDoc").hide();
 		$('#consolidateBlock').show();
@@ -112,11 +113,15 @@ var grobid = (function($) {
                             let container = new DataTransfer();
                             container.items.add(file);
                             $('#api_file')[0].files = container.files;
+                            $('#api_file2')[0].files = container.files;
                             $('#input2')[0].files = container.files;
                             $('#input')[0].files = container.files;
 
+                            $('#file_name').text(fileName);
+
                             $('.file-list-li').remove()
                             let pdf_button = document.createElement("button");
+                            let jats_preview = document.createElement('button');
                             let down_button = document.createElement("button");
                             let li = document.createElement("li");
                             li.className = "file-list-li"
@@ -129,44 +134,96 @@ var grobid = (function($) {
                                 e.stopPropagation()
                                 viewPdf(0);
                             }
+                            
+                            jats_preview.innerText = "Jats-Preview";
+                            jats_preview.id='jatsPreview';
+                            jats_preview.onclick = (e) => {
+                                e.stopPropagation();
+                                let form = document.getElementById('apiForm2')
+                                let formData = new FormData(form);
+                                var xhr = new XMLHttpRequest();
+                                var url = "/api/getJatsPreview"
+                                xhr.responseType = 'text';
+                                xhr.open('POST', url, true);
+                                xhr.onreadystatechange = function (e) {
+                                    if (xhr.readyState === 4) {
+                                        if (xhr.status === 200) {
+                                            let responseText = e.target.response;
+                                            console.log(responseText)
+                                            let previewPopup = window.open("","preview", "width=1000px, height=1200px")
+                                            $(previewPopup.document).ready(() => {
+                                                previewPopup.document.body.innerHTML = '';
+                                                previewPopup.document.write(responseText);
+                                                previewPopup.document.write('<link rel="stylesheet" type="text/css" href="resources/jats/colorCode.css"/>')
+                                                previewPopup.document.write('<link rel="stylesheet" type="text/css" href="resources/jats/pubHeader/search.content.css"/>')
+                                                previewPopup.document.write('<link rel="stylesheet" type="text/css" href="resources/jats/pubHeader/search.ui.css"/>')
+                                                previewPopup.document.write('<link rel="stylesheet" type="text/css" href="resources/jats/pubHeader/search.jats.css"/>')
+                                                previewPopup.document.write('<link rel="stylesheet" type="text/css" href="resources/jats/search.arti.jats.css"/>')
+                                                previewPopup.document.getElementsByClassName('jats-root')[0].style.display = 'block';
 
-                            down_button.innerText = "trainTemp에 저장하기";
-                            down_button.onclick = (e) => {
-                                e.stopPropagation()
-                                $('.modal').fadeIn();
-                                $('#savePdfBtn').unbind('click');
-                                $('#savePdfBtn').bind('click', () => {
-                                    let problems = []
-                                    $('input:checkbox[name="problem"]').each((i,e) => {
-                                        if($(e).is(":checked")){
-                                            problems.push(e.value);
-                                        }
-                                    })
-                                    if (problems.length > 0) {
-                                        fileName = "("+problems+")" + fileName
-                                    }
-                                    let form = document.getElementById('apiForm');
-                                    let formData = new FormData(form);
-                                    formData.append("fileName", fileName);
-                                    let xhr__ = new XMLHttpRequest();
-                                    xhr__.responseType = 'json';
-                                    xhr__.open('POST', "/api/saveTempPdf", true);
-                                    xhr__.onreadystatechange = (e) => {
-                                        if (xhr__.readyState === 4) {
-                                            if (xhr__.status === 200) {
-                                                alert('success save!')
-                                                $('.modal').fadeOut();
-                                            }
-                                        }
-                                    }
-                                    xhr__.send(formData);
-                                })
-                            }
+                                                function extracted(tag) {
+                                                    let p = previewPopup.document.getElementsByTagName(tag)
+                                                    for (let i = 0; i < p.length; i++) {
+                                                        let text = p[i].innerText;
+                                                        if (text) {
+                                                            let textarea = previewPopup.document.createElement('textarea')
+                                                            textarea.innerHTML = text;
+                                                            p[i].innerText = textarea.childNodes.length === 0 ? "" : textarea.childNodes[0].nodeValue;
+                                                        }
+                                                    }
+                                                }
 
-                            $(li).append(pdf_button);
+                                                extracted('p');
+                                                extracted('p');
+                                                extracted('span');
+                                                extracted('span');
+                                            })
+                                            
+                                        }
+                                    }
+                                }
+                                xhr.send(formData);
+                            } 
+                            // down_button.innerText = "trainTemp에 저장하기";
+                            // down_button.onclick = (e) => {
+                            //     e.stopPropagation()
+                            //     $('.modal').fadeIn();
+                            //     $('#savePdfBtn').unbind('click');
+                            //     $('#savePdfBtn').bind('click', () => {
+                            //         let problems = []
+                            //         $('input:checkbox[name="problem"]').each((i,e) => {
+                            //             if($(e).is(":checked")){
+                            //                 problems.push(e.value);
+                            //             }
+                            //         })
+                            //         if (problems.length > 0) {
+                            //             fileName = "("+problems+")" + fileName
+                            //         }
+                            //         let form = document.getElementById('apiForm');
+                            //         let formData = new FormData(form);
+                            //         formData.append("fileName", fileName);
+                            //         let xhr__ = new XMLHttpRequest();
+                            //         xhr__.responseType = 'json';
+                            //         xhr__.open('POST', "/api/saveTempPdf", true);
+                            //         xhr__.onreadystatechange = (e) => {
+                            //             if (xhr__.readyState === 4) {
+                            //                 if (xhr__.status === 200) {
+                            //                     alert('success save!')
+                            //                     $('.modal').fadeOut();
+                            //                 }
+                            //             }
+                            //         }
+                            //         xhr__.send(formData);
+                            //     })
+                            // }
+                            //
+                            $('#random-area').find('#pdf0').remove();
+                            $('#random-area').find('#jatsPreview').remove();
+                            $('#random-area').append(pdf_button);
+                            $('#random-area').append(jats_preview);
                             $(li).append(down_button);
                             $('#file-list').append(li);
-                            $('#submitRequest4').click();
+                            // $('#submitRequest4').click();
 
                         };
                         req.send();
@@ -192,6 +249,7 @@ var grobid = (function($) {
                 let container = new DataTransfer();
                 container.items.add(file);
                 $('#api_file')[0].files = container.files;
+                $('#api_file2')[0].files = container.files;
                 $('#input2')[0].files = container.files;
                 $('#input')[0].files = container.files;
 
@@ -278,6 +336,7 @@ var grobid = (function($) {
 		$('#submitRequest2').bind('click', submitQuery2);
 		$('#submitRequest3').bind('click', submitQuery3);
 		$('#submitRequest4').bind('click', submitQuery4);
+		$('#submitRequest5').bind('click', submitQuery5);
 
 		// bind download buttons with download methods
 		$('#btn_download').bind('click', download);
@@ -344,6 +403,30 @@ var grobid = (function($) {
                 reader.readAsArrayBuffer(document.getElementById("api_file").files[0]);
             }
         })
+        
+        $('#jats').click(() => {
+            $("#about").attr('class', 'section-not-active');
+            $("#rest").attr('class', 'section-not-active');
+            $("#pdf").attr('class', 'section-not-active');
+            //$("#admin").attr('class', 'section-not-active');
+            $("#doc").attr('class', 'section-not-active');
+            $("#patent").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-active');
+
+            $("#subTitle").html("JATS");
+            $("#subTitle").show();
+
+            $("#divAbout").hide();
+            $("#divRestI").hide();
+            $("#divRestII").hide();
+            $("#divRestIII").hide();
+            $("#divRestIV").show();
+
+            //$("#divAdmin").hide();
+            $("#divDoc").hide();
+            $("#divDemo").hide();
+            return false;
+        })
 
 		$("#about").click(function() {
 			$("#about").attr('class', 'section-active');
@@ -352,14 +435,17 @@ var grobid = (function($) {
 			//$("#admin").attr('class', 'section-not-active');
 			$("#doc").attr('class', 'section-not-active');
 			$("#patent").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-not-active');
 
-			$("#subTitle").html("API");
+            $("#subTitle").html("API");
 			$("#subTitle").show();
 
 			$("#divAbout").show();
 			$("#divRestI").hide();
 			$("#divRestII").hide();
 			$("#divRestIII").hide();
+			$("#divRestIV").hide();
+            
 			//$("#divAdmin").hide();
 			$("#divDoc").hide();
 			$("#divDemo").hide();
@@ -372,8 +458,9 @@ var grobid = (function($) {
 			$("#about").attr('class', 'section-not-active');
 			//$("#admin").attr('class', 'section-not-active');
 			$("#patent").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-not-active');
 
-			$("#subTitle").hide();
+            $("#subTitle").hide();
 			block = 0;
 			//$("#subTitle").html("TEI output service");
 			//$("#subTitle").show();
@@ -382,6 +469,7 @@ var grobid = (function($) {
 			$("#divRestI").show();
 			$("#divRestII").hide();
 			$("#divRestIII").hide();
+			$("#divRestIV").hide();
 			$("#divAbout").hide();
 			$("#divDoc").hide();
 			//$("#divAdmin").hide();
@@ -414,7 +502,8 @@ var grobid = (function($) {
 			$("#rest").attr('class', 'section-not-active');
 			$("#pdf").attr('class', 'section-not-active');
 			$("#patent").attr('class', 'section-not-active');
-			$("#about").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-not-active');
+            $("#about").attr('class', 'section-not-active');
 			//$("#admin").attr('class', 'section-not-active');
 
 			$("#subTitle").html("Doc");
@@ -425,6 +514,7 @@ var grobid = (function($) {
 			$("#divRestI").hide();
 			$("#divRestII").hide();
 			$("#divRestIII").hide();
+			$("#divRestIV").hide();
 			//$("#divAdmin").hide();
 			$("#divDemo").hide();
 			return false;
@@ -433,7 +523,8 @@ var grobid = (function($) {
 			$("#pdf").attr('class', 'section-active');
 			$("#rest").attr('class', 'section-not-active');
 			$("#patent").attr('class', 'section-not-active');
-			$("#about").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-not-active');
+            $("#about").attr('class', 'section-not-active');
 			//$("#admin").attr('class', 'section-not-active');
 			$("#doc").attr('class', 'section-not-active');
 
@@ -449,12 +540,14 @@ var grobid = (function($) {
 			$("#divRestI").hide();
 			$("#divRestII").show();
 			$("#divRestIII").hide();
+			$("#divRestIV").hide();
 			//$("#divAdmin").hide();
 			return false;
 		});
 		$("#patent").click(function() {
 			$("#patent").attr('class', 'section-active');
-			$("#rest").attr('class', 'section-not-active');
+            $("#jats").attr('class', 'section-not-active');
+            $("#rest").attr('class', 'section-not-active');
 			$("#pdf").attr('class', 'section-not-active');
 			$("#about").attr('class', 'section-not-active');
 			//$("#admin").attr('class', 'section-not-active');
@@ -470,6 +563,7 @@ var grobid = (function($) {
 			$("#divRestI").hide();
 			$("#divRestII").hide();
 			$("#divRestIII").show();
+			$("#divRestIV").show();
 			//$("#divAdmin").hide();
 			return false;
 		});
@@ -1069,6 +1163,32 @@ var grobid = (function($) {
         }
     }
     
+    function submitQuery5() {
+        let form = document.getElementById('apiForm2')
+        let formData = new FormData(form);
+        var xhr = new XMLHttpRequest();
+        var url = "/api/getJats"
+        xhr.responseType = 'text';
+        xhr.open('POST', url, true);
+        xhr.onreadystatechange = function (e) {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    let responseText = e.target.response;
+                    var display = "<pre class='prettyprint lang-xml' id='xmlCode'>";
+                    var testStr = vkbeautify.xml(responseText);
+                    display += htmll(testStr);
+
+                    display += "</pre>";
+                    $('#requestResult5').html(display);
+                    window.prettyPrint && prettyPrint();
+                    $('#requestResult5').show();
+                }
+            }
+        }
+        xhr.send(formData);
+        
+    }
+    
     function capture(object, file, isFig){
         let preview = document.createElement("div");
         let caption = document.createElement("small");
@@ -1217,11 +1337,9 @@ var grobid = (function($) {
 
     function getImage(path, pdfIndex, index, win){
         let imageXhr = new XMLHttpRequest();
-        let imgUrl = "/api/getImage";
-        let form = new FormData();
-        form.append("path", path);
+        let imgUrl = "/api/getImage?path="+path;
         imageXhr.responseType = "arraybuffer";
-        imageXhr.open('POST', imgUrl, true);
+        imageXhr.open('get', imgUrl, true);
         imageXhr.onreadystatechange = function() {
             if(imageXhr.readyState == 4) {
                 if (imageXhr.status == 200) {
@@ -1252,7 +1370,7 @@ var grobid = (function($) {
                 }
             }
         }
-        imageXhr.send(form);
+        imageXhr.send();
     }
 
     function getTableImage(areaArray, pdfFile, index, isFig){

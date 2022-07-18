@@ -46,7 +46,7 @@ public class XQueryProcessor {
         InputSource XMLSource = new InputSource(is);
 
         SAXSource SAXs = new SAXSource(XMLSource);
-        DocumentInfo DI = sqc.buildDocument(SAXs);
+        DocumentInfo DI = sqc.getConfiguration().buildDocument(SAXs);
         dqc.setContextItem(DI);
     }
 

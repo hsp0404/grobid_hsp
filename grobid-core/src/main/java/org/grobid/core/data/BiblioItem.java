@@ -3647,6 +3647,9 @@ public class BiblioItem {
 
                     TextUtilities.appendN(tei, '\t', nbTag);
                     tei.append("<author");
+                    
+                    if (author.getLang() != null)
+                        tei.append(" xml:lang=\"" + author.getLang() + "\"");
 
                     if (autRank == contactAut) {
                         tei.append(" role=\"corresp\">\n");
@@ -4404,11 +4407,22 @@ public class BiblioItem {
         if (title != null) {
             if (title.contains("//lang//")) {
                 String[] titleSplit = title.split("//lang//");
-                if (titleSplit.length == 2) {
+                if (titleSplit.length >= 2) {
                     String s1 = titleSplit[0];
                     String s2 = titleSplit[1];
-                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
-                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+                    Language lang1 = languageUtilities.runLanguageId(s1);
+                    Language lang2 = languageUtilities.runLanguageId(s2);
+                    String s1_lang = null;
+                    String s2_lang = null;
+                    if(lang1 == null)
+                        s1_lang = "";
+                    else
+                        s1_lang = lang1.getLang();
+                    if(lang2 == null)
+                        s2_lang = "";
+                    else
+                        s2_lang = lang2.getLang();
+                    
     
                     if (s1.trim().equals(s2.trim())) {
                         title = s1;
@@ -4435,8 +4449,10 @@ public class BiblioItem {
                     int endIndex = title.lastIndexOf("//lang//");
                     String s1 = title.substring(0, endIndex);
                     String s2 = title.substring(endIndex + 8, title.length());
-                    String s1_lang = languageUtilities.runLanguageId(s1).getLang();
-                    String s2_lang = languageUtilities.runLanguageId(s2).getLang();
+                    Language lang1 = languageUtilities.runLanguageId(s1);
+                    String s1_lang = lang1 == null ? "" : lang1.getLang();
+                    Language lang2 = languageUtilities.runLanguageId(s2);
+                    String s2_lang = lang2 == null ? "" : lang2.getLang();
 
                     if (s1_lang.equals("ko") && s2_lang.equals("en")) {
                         title = s1;

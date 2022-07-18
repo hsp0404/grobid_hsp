@@ -59,7 +59,7 @@
 				<span style="padding-left:20px;">&nbsp;</span>
 			<a class="section-not-active" id="pdf" href="#">PDF</a>
 				<span style="padding-left:20px;">&nbsp;</span>
-<!--			<a class="section-not-active" id="patent" href="#">Patent</a> -->
+			<a class="section-not-active" id="jats" href="#">JATS</a> 
 				<span style="padding-left:20px;">&nbsp;</span>
 			<!--a class="section-not-active" id="admin" href="#">Admin</a>
 				<span style="padding-left:20px;">&nbsp;</span-->
@@ -69,7 +69,10 @@
 					</h2>
 				</h1>
 	        </div>
-	
+              <div id="random-area">
+                <button type="button" id="random_button">Random</button>
+                <span id="file_name" style="font-size: 20px"></span>
+              </div>
 			<table border="0">
 				<tr>
 				<td style="width:100px;align:left;vertical-align: top;"><h4><span id="subTitle"></span></h4></td> 
@@ -93,7 +96,6 @@
                         <button type="button" id="url-submit" >제출</button>
                     </div>
 					<div id="divAbout">
-                        <button type="button" id="random_button">Random</button>
                         <form class="form-horizontal" enctype="multipart/form-data" method="post" id="apiForm" target=_blank accept-charset="UTF-8">
 <!--                            <label class="checkbox" id="consolidateBlock1" style="display: inherit;">-->
 <!--                                <input type="checkbox" id="consolidateHeader" name="consolidateHeader" value="1"/>Accesson/Crossref api-->
@@ -342,6 +344,18 @@
 				<br>
 				<div id="requestResult3"></div>
 			</div>
+
+              <div id="divRestIV">
+                  <form class="form-horizontal" enctype="multipart/form-data" method="post" id="apiForm2" target=_blank accept-charset="UTF-8">
+                      <input type="file" name="input" id="api_file2" accept="application/pdf">
+                      <!--                            <input id="submitRequest4" value="Submit" class="btn btn-success"/>-->
+                      <button type="button" id="submitRequest5" class="btn btn-success">Submit</button>
+                  </form>
+                  <br>
+                  <div id="requestResult5">
+                      
+                  </div>
+              </div>
 	
 			<!--div id="divAdmin">
 				<form method="post" class="form-horizontal" id="adminForm">

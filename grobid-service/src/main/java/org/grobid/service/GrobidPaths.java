@@ -169,6 +169,8 @@ public interface GrobidPaths {
     String PATH_META_DATA = "getMeta";
 
     String PATH_JATS = "getJats";
+    
+    String PATH_JATS_PREVIEW = "getJatsPreview";
 
     String PATH_RANGE = "getRange";
 

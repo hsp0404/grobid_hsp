@@ -1,0 +1,219 @@
+@charset "UTF-8";
+
+	body {
+	  background: white;
+	  
+	  /* 폰트 얇은굵기 제거 필요 */
+	  
+/* 	  font-family: Helvetica Neue, arial, sans-serif; */
+
+	  position: relative;
+	}
+	
+	.text-center {text-align: center;}
+	
+	#viewerContainer {
+	  overflow: auto;
+	  -webkit-overflow-scrolling: touch;
+/* 	  position: absolute; */
+	  position: relative;
+	  top: 32px;
+	  width : 100%;
+	  /*right: 0;*/
+	  bottom: 0;
+	  left: 0;
+	  outline: none;
+	  text-align: center;
+	  font: 12pt/1.75 arial,helvetica,clean,sans-serif
+	}
+	
+	#viewerContainer::-webkit-scrollbar {
+	  display: none;
+	}
+
+	.pdfViewer .canvasWrapper {
+	  box-shadow: 0 0 3px #bbb;
+	}
+	
+	div.fig > p {
+		display : flex;
+	}
+	/* 화면출력 이미지 사이즈 제한 해제 2020-09-24 */
+/* 	.fig { */
+/* 		height: 300px; */
+/* 	} */
+	
+	.parent {
+	  position: absolute;
+	  margin: 25px auto;
+	}
+	
+	.title_bar{
+		text-align: center;
+		background-color: #323639;
+		width: 100%;
+		min-height: 35px;
+		color: white;
+		font-size: x-large;
+	}
+	
+	.title{
+		line-height: 35px;
+   		display: block;
+	}
+	
+	.comment {
+	  top : 44px;
+	  margin: 25px auto;
+	  width: 30%;
+	  box-shadow: 0 0 3px #bbb;
+	  position: absolute;
+	  right:0px;
+	  padding : 5px 5px 5px 5px;
+	  overflow: auto;
+	  -webkit-overflow-scrolling: touch;
+	  bottom: 0;
+	  right 0;
+	  outline: none; 
+	}
+	
+	.fixed{
+		position: fixed;
+		top : 0px;
+	}
+	
+	.origin-view {cursor: pointer; float:right;  display: block;  background:#55565a; padding: 0 10px 0 0; border-radius: 12px; overflow: hidden;	  margin: 3px 0 0 0;  display :none;}
+	.origin-view a{ padding: 0 18px 0 12px; line-height: 22px;  color: #fff; display: inline-block;   background:#55565a url(../img/background/blank_icon.png) no-repeat right 2px;   font-size: 13px; text-decoration: none !important;}
+
+	section {
+		margin-bottom:25px;
+	}
+	.jats-root{width: 80%; display: inline-block; text-align: left;}
+	.article_info_box { background: #f7f7f7;border:1px solid #dfdfdf; padding:10px 12px; margin-bottom: 25px; }
+	.article_info_box ul li  {margin-bottom: 4px;   font-size: 14px !important; line-height: 1.42857143 !important; }
+	.article_info_box ul li .doi_link  {color: #2364bd; }
+	.article_info_box ul li:last-child  { margin-bottom: 0px; }
+	.article_title {font-size: 16px;font-weight: normal; color: #000; border-bottom: 1px solid #e4e4e4; margin-bottom: 10px; padding-bottom: 8px; position: relative; }
+	.article_title:after { content: ''; display: block; clear: both; width:16px;height: 2px;background: #8e5dd8; position: absolute; left:0; bottom:-1px; }
+	.article_text { text-align: justify;  color: #555; line-height: 25px; margin-bottom: 25px}
+	.article_text p { margin-bottom: 10px; }
+	/* 초록 화면 노출 관련 수정 2020-09-29 */
+/* 	.front{display: none;} */
+/*	.front .view_title{display: none;}*/
+/*	.front .article_info_box{display: none;}*/
+    .keyword_box > dl > dd > span::after {
+        content: ";"
+    }
+	
+	span.highlight {
+	  margin: -1px;
+	  padding: 1px;
+	
+	  background-color: yellow;
+	  border-radius: 4px;
+	}
+	
+	/* The Modal (background) */
+	.modal-image {
+	  display: none; /* Hidden by default */
+	  position: fixed; /* Stay in place */
+	  z-index: 1; /* Sit on top */
+	  padding-top: 100px; /* Location of the box */
+	  left: 0;
+	  top: 0;
+	  width: 100%; /* Full width */
+	  height: 100%; /* Full height */
+	  overflow: auto; /* Enable scroll if needed */
+	  background-color: rgb(0,0,0); /* Fallback color */
+	  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+	}
+	
+	/* Modal Content (image) */
+	.modal-content {
+	  margin: auto;
+	  display: block;
+	  width: 80%;
+	  max-width: 700px;
+	  background-color: white;
+	}
+	
+	/* Caption of Modal Image */
+	#caption {
+	  margin: auto;
+	  display: block;
+	  width: 80%;
+	  max-width: 700px;
+	  text-align: center;
+	  color: #ccc;
+	  padding: 10px 0;
+	  height: 150px;
+	}
+	
+	/* Add Animation */
+	.modal-content, #caption {  
+	  -webkit-animation-name: zoom;
+	  -webkit-animation-duration: 0.6s;
+	  animation-name: zoom;
+	  animation-duration: 0.6s;
+	}
+	
+	@-webkit-keyframes zoom {
+	  from {-webkit-transform:scale(0)} 
+	  to {-webkit-transform:scale(1)}
+	}
+	
+	@keyframes zoom {
+	  from {transform:scale(0)} 
+	  to {transform:scale(1)}
+	}
+	
+	/* The Close Button */
+	.close {
+	  position: absolute;
+	  top: 15px;
+	  right: 35px;
+	  color: #f1f1f1;
+	  font-size: 40px;
+	  font-weight: bold;
+	  transition: 0.3s;
+	}
+	
+	.close:hover,
+	.close:focus {
+	  color: #bbb;
+	  text-decoration: none;
+	  cursor: pointer;
+	}
+	
+	/* 100% Image Width on Smaller Screens */
+	@media only screen and (max-width: 100%){
+	  .modal-content {
+		width: 100%;
+	  }
+	}
+	
+	/* 화면출력 이미지 사이즈 제한 크기 조정 2020-09-24 */
+/* 	#article-img { */
+/* 		max-width : 30%; float:left; padding-right : 10px; */
+/* 	} */
+	#article-img {
+		max-width : 80%; margin: 0 auto; display: block;
+	}
+	
+	.icon-photo {
+		width: 100px; 
+		height: 100px;
+		object-fit: cover;
+		object-position: top;
+		border-radius: 50%;	
+	}
+	
+	.comment-list .comment-head .ico-user {
+		position: absolute;
+		top: 24px;
+		left: 0;
+	}
+	/* 화면출력 테이블 가운데 정렬 2020-09-24 */
+	div.section > div.table-wrap > table {
+		margin: 0 auto;
+	}

@@ -9,6 +9,9 @@ grobid:
   
   # normally nothing to change here, path relative to the grobid-home path (e.g. grobid-home/lib)
   nativelibrary: "lib"
+  
+  # ko/en
+  modelLanguage: "en"
 
   pdf:
     pdfalto:
@@ -79,7 +82,7 @@ grobid:
     # we configure here how each sequence labeling model should be implemented
     # for feature-engineered CRF, use "wapiti" and possible training parameters are window, epsilon and nbMaxIterations
     # for Deep Learning, use "delft" and select the target DL architecture (see DeLFT library), the training 
-    # parameters then depends on this selected DL architecture 
+    # parameters then depends on this selected DL architecture
     
     - name: "segmentation"
       # at this time, must always be CRF wapiti, the input sequence size is too large for a Deep Learning implementation
@@ -211,7 +214,7 @@ grobid:
   #          the service at first call
   # true -> all the models are loaded into memory at the server startup, slow the start of the services and models not
   #         used will take some memory, but server is immediatly warm and ready
-  modelPreload: false
+  modelPreload: true
 
 server:
     type: custom

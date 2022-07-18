@@ -1,0 +1,203 @@
+@charset "utf-8";
+
+/* div.fn-group { display:none; } */
+/*
+{ font-family:Noto Sans KR,Malgun Gothic,맑은 고딕, Verdana,Arial;  color: #444; }
+*/
+.splitter { color:#666; }
+.generated { color:lightcoral; }
+.publication .generated { color: #444; }
+
+
+/* a tag 점선밑줄 제거 필요 */
+
+/* a { text-decoration:underline dotted; } */
+
+
+/*
+{ font-size: 14px; margin-top:2em; }
+*/
+italic { font-style:italic;  }
+span.author-name { font-weight:bold; }
+.kwd { /* font-weight:bold; */ color: #3465a4; }
+.quick-search { color: darkgray; font-size:80%; vertical-align: super; margin-left:2px; }
+.doi { color: darkmagenta; }
+div.metadata div.history { font-style:italic; font-size:13px; }
+h1.document-title { font-size: 22px; color: #403b8d; margin-bottom: 1em; font-weight:bold; margin-top:1em; }
+h2.document-title { font-size: 20px; color: #403b8d; }
+h2.main-title { background: url(../img/background/t_line02.png) repeat-x 0 bottom; position: relative; margin-top:1em; }
+h2.main-title span  { display:block; 
+  background: url(../img/background/t_line01.png) no-repeat 0 bottom;
+  font-size:18px; color: #222; padding: 0 0 10px 0; font-weight: bold;}
+h2.main-title.no-toc { margin-top:1.1em; }
+h2.main-title.no-toc span { font-size:15px; }
+
+.view_title span.subtitle { display:block; font-size:96%; }
+/*
+.section-title { font-size: 15px; font-weight:normal; margin-top: 1.2em; }
+p { margin:0.4em 0.4em; }
+p.contrib { margin: 0; display:inline; }
+p.contrib:after { content:'; ' }
+*/
+p { text-indent:0.6em; }
+.ref p { text-indent:0; }
+img { max-width: 100%; }
+.caption .title { font-size: 15px; color:#222; }
+.author-and-history p {
+  padding: 0;
+  margin: 0;
+  font-size:13px;
+  color:darkblue;
+}
+h2 {
+	/*margin-top:1em;*/
+	margin-top:0em;
+}
+h3  { 
+    font-size: 16px;
+/*    font-weight: bold; */
+/*    color: #222;  */
+/*    padding: 0.3em 0 0.3em 0.1em; */
+    margin-top:1.4em;
+    margin-bottom:0.7em; 
+}
+h4  { 
+    font-size: 15px;
+/*    font-weight: bold; */
+/*    color: #222;  */
+/*    padding: 0.3em 0 0.3em 0.1em; */
+    margin-top:0.5em; 
+}
+h5 {
+/* 	font-weight:bold; */
+/* 	margin:0.4em; */
+	font-size:14px;
+	margin-top:0.3em;	
+}
+
+a.xref {
+	/* font-style:italic; */
+	color: #2f4a8b; /* blueviolet;*/
+	text-decoration:underline dotted;
+}
+a.xref.ref-type-table,
+a.xref.ref-type-fig {
+  font-weight:bold;	
+}
+a.xref.ref-type-fn {
+	font-weight:bold;
+	color:blue;
+	vertical-align:super;
+	font-size:80%;
+}
+/*
+a.xref.ref-type-fn sup {
+	vertical-align:initial;
+	font-size:initial;
+}
+a.xref.ref-type-fn:before {
+	content:'[';
+}
+a.xref.ref-type-fn:after {
+  content:']';
+}
+*/
+
+div.table-wrap,
+div.fig {
+	margin:0.4em 0;
+	padding: 3px 10px 5px 10px;
+	background-color:#f6f6f6;
+}
+
+div.table-wrap .label,
+div.fig .label {
+	color:darkblue;
+	display:inline;
+	margin:0;
+	padding:0;
+}
+
+.footnote {
+  margin-bottom:2px;
+  padding-left:30px;
+  font-size:14px;
+	position:relative;
+}
+.footnote p {
+	padding:0; 
+	padding-left:10px;
+	text-indent:0;
+}
+.footnote .number {
+	position:absolute;
+	top:0;left:0;
+	width:30px;
+	text-align:right; 
+}
+
+.ref-list .ref {
+  margin-bottom:2px;
+  padding-left:40px;
+  font-size:14px;
+  position:relative;
+}
+.ref-list .ref > div.ref-label {
+  position:absolute;
+  top:0;left:0;
+  width: 30px;
+  text-align: right;
+}
+.ref a.doi {
+/* 	background:transparent url('../img/doi-24x24.png') no-repeat left center; */
+	background:transparent no-repeat left center;
+	background-size:18px;
+	padding-left:21px;
+	text-decoration:underline dotted;
+}
+.def-list { margin:0 2em 1em 2em; }
+.def-list p { margin:0; }
+.def-item-row:before,
+.def-item-row:after {
+  display: table;
+  content: " ";
+}
+.def-term {
+	float:left;
+}
+.def-def {
+	margin-left:2em;
+}
+h6 {
+  font-weight:bold;
+  margin:0.4em;
+}
+
+.alert {
+	font-size:12px;
+	padding: 1em 35px 1em 1em;
+	text-align:justify;
+}
+
+.alert-dismissible .close {
+	opacity:0.8;
+	text-decoration:none;
+}
+
+/* 0311 */
+div.table-wrap  { overflow-x: auto;}
+div.table-wrap table {	border-collapse: collapse;}	
+div.table-wrap table tbody { width: 100%; font-size: 13px; }
+div.table-wrap table tbody th { padding: 1px 2px; background-color:#e6e6e6;}
+div.table-wrap table tbody td { 
+	min-width: 80px; 
+	padding: 1px 2px;
+	/*border-bottom : 1px solid #808080;*/
+	/*border-top : 1px solid #808080;*/
+    border: 1px solid #c3c3c3;
+    text-align: center;
+}
+
+/* 0410 */
+table img { max-width: unset; }
+

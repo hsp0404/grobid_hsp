@@ -42,6 +42,7 @@ public class GrobidProperties {
     public static final Logger LOGGER = LoggerFactory.getLogger(GrobidProperties.class);
 
     static final String FOLDER_NAME_MODELS = "models";
+    static final String FOLDER_NAME_MODELS_KO = "models_ko";
     static final String FILE_NAME_MODEL = "model";
     private static final String GROBID_VERSION_FILE = "/grobid-version.txt";
     static final String UNKNOWN_VERSION_STR = "unknown";
@@ -618,13 +619,22 @@ public class GrobidProperties {
             return null;
         }
         String extension = getGrobidCRFEngine(model).getExt();
-        return new File(getGrobidHome(), FOLDER_NAME_MODELS + File.separator
+        String modelFolder = "";
+        if(grobidConfig.grobid.modelLanguage.equals("ko"))
+            modelFolder = FOLDER_NAME_MODELS_KO;
+        else 
+            modelFolder = FOLDER_NAME_MODELS;
+        return new File(getGrobidHome(), modelFolder + File.separator
             + model.getFolderName() + File.separator
             + FILE_NAME_MODEL + "." + extension);
     }
 
     public static File getModelPath() {
-        return new File(getGrobidHome(), FOLDER_NAME_MODELS);
+        if(grobidConfig.grobid.modelLanguage.equals("ko")){
+            return new File(getGrobidHome(), FOLDER_NAME_MODELS_KO);
+        } else {
+            return new File(getGrobidHome(), FOLDER_NAME_MODELS);
+        }
     }
 
     public static File getTemplatePath(final File resourcesDir, final GrobidModel model) {

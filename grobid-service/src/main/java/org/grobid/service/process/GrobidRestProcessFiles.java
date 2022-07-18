@@ -54,6 +54,7 @@ import java.util.zip.ZipOutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * Web services consuming a file
@@ -236,7 +237,7 @@ public class GrobidRestProcessFiles {
 
                 doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
                 String docTei = doc.getTei();
-                docTei.replaceAll("&", "&amp;");
+                docTei = docTei.replaceAll("&", "&amp;");
                 JATSTransformer jatsTransformer = new JATSTransformer();
                 jats = jatsTransformer.transform(docTei);
                 responseEntity.put(fileName, jats);
@@ -246,7 +247,6 @@ public class GrobidRestProcessFiles {
 
             response = Response.status(Response.Status.OK)
                 .entity(jats)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON + "; charset=UTF-8")
                 .build();
         } catch (NoSuchElementException nseExp) {
             LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
@@ -378,12 +378,6 @@ public class GrobidRestProcessFiles {
                 doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
 
                 String tei = doc.getTei();
-                if (doc.getResHeader().getEnglishTitle() != null) {
-                    System.out.println("HERE");
-                }
-                if (doc.getResHeader().getJournal() != null || doc.getResHeader().getOriginalJournal() != null) {
-                    System.out.println("HERE");
-                }
 
                 result = doc.getResHeader();
                 bibDataSetList = doc.getBibDataSets();
@@ -1612,4 +1606,100 @@ public class GrobidRestProcessFiles {
         return out;
     }
 
+    public Response getJatsPreview(LinkedHashMap<String, InputStream> paramMap) {
+        LOGGER.debug(methodLogIn());
+        String headerRetVal = null;
+        Document doc;
+        Response response = null;
+        File originFile = null;
+        Engine engine = null;
+        List<BibDataSet> bibDataSetList = null;
+        Map<String, String> responseEntity = new HashMap<>();
+        int lastNum = 0;
+        String res = null;
+        try {
+
+            engine = Engine.getEngine(true);
+            // conservative check, if no engine is free in the pool a NoSuchElementException is normally thrown
+            if (engine == null) {
+                throw new GrobidServiceException(
+                    "No GROBID engine available", Status.SERVICE_UNAVAILABLE);
+            }
+
+
+            for (Map.Entry<String, InputStream> map : paramMap.entrySet()) {
+                String fileName = map.getKey();
+                InputStream inputStream = map.getValue();
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+                originFile = IOUtilities.writeInputFile(dis);
+
+
+                byte[] digest = md.digest();
+
+                if (originFile == null) {
+                    LOGGER.error("The input file cannot be written.");
+                    throw new GrobidServiceException(
+                        "The input file cannot be written. ", Status.INTERNAL_SERVER_ERROR);
+                }
+
+                String md5Str = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                String assetPath = GrobidProperties.getTempPath().getPath() + File.separator + KeyGen.getKey();
+
+
+                GrobidAnalysisConfig config =
+                    GrobidAnalysisConfig.builder()
+                        .pdfAssetPath(new File(assetPath))
+                        .consolidateHeader(0)
+                        .build();
+
+                BiblioItem result;
+
+                doc = engine.fullTextToTEIDoc(originFile, md5Str, config);
+                String docTei = doc.getTei();
+                docTei = docTei.replaceAll("&", "&amp;");
+                JATSTransformer jatsTransformer = new JATSTransformer();
+                String jats = jatsTransformer.transform(docTei);
+
+                JATSTransformer citationTransformer = new JATSTransformer("citation");
+                String temp = citationTransformer.transform(jats);
+
+                JATSTransformer bodyTransformer = new JATSTransformer("body");
+                res = bodyTransformer.transform(temp);
+
+
+                responseEntity.put(fileName, res);
+
+
+            }
+
+            response = Response.status(Response.Status.OK)
+                .entity(res)
+                .build();
+        } catch (NoSuchElementException nseExp) {
+            LOGGER.error("Could not get an engine from the pool within configured time. Sending service unavailable.");
+            response = Response.status(Status.SERVICE_UNAVAILABLE).build();
+        } catch (GrobidException exp){
+            if (exp.getStatus() == GrobidExceptionStatus.NO_BLOCKS) {
+                response = Response.status(Status.NO_CONTENT).entity(exp.getMessage()).build();
+            } else{
+                LOGGER.error("An unexpected exception occurs. ", exp);
+                response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+            }
+        } catch (Exception exp) {
+            LOGGER.error("An unexpected exception occurs. ", exp);
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).entity(exp.getMessage()).build();
+        } finally {
+            if (originFile != null)
+                IOUtilities.removeTempFile(originFile);
+
+            if (engine != null) {
+                GrobidPoolingFactory.returnEngine(engine);
+            }
+        }
+
+        LOGGER.debug(methodLogOut());
+        return response;
+    }
 }
