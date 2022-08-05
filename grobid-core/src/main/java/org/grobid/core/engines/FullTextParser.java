@@ -2213,9 +2213,7 @@ public class FullTextParser extends AbstractParser {
             
 
             for (Table result : newLocalResults) {
-                if (result.getHeader().equals("")) {
-                    continue;
-                }
+
                 List<LayoutToken> localTokenizationTable = result.getLayoutTokens();
                 //result.setLayoutTokens(tokenizationTable);
 
@@ -2261,8 +2259,12 @@ public class FullTextParser extends AbstractParser {
             }
         }
         
-        if(!isConsolidated)
+        if(!isConsolidated){
+            if (table.getHeader().equals("")) {
+                table.setBody(true);
+            }
             newLocalResults.add(table);
+        }
     }
 
 

@@ -346,26 +346,39 @@
 						<xsl:value-of select="tei:figDesc"/>
 					</p>
 				</caption>
-				<table>
-					<tr>
-						<xsl:for-each select="tei:table/tei:row[1]/tei:cell">
-							<xsl:variable name="cols" select="@cols"/>
-							<td colspan="{$cols}">
-								<bold>
-									<xsl:value-of select="."/>
-								</bold>
-							</td>
-						</xsl:for-each>
-					</tr>
-					<xsl:variable name="n" select="2"/>
-					<xsl:variable name="row_count" select="count(tei:table/tei:row)"/>
-
-					<xsl:if test="$n &lt;= $row_count">
-						<xsl:call-template name="td-repeat">
-							<xsl:with-param name="total" select="$row_count"/>
-						</xsl:call-template>
-					</xsl:if>
-				</table>
+                <xsl:if test="@validated='true'">
+                    <table>
+                        <tr>
+                            <xsl:for-each select="tei:table/tei:row[1]/tei:cell">
+                                <xsl:variable name="cols" select="@cols"/>
+                                <td colspan="{$cols}">
+                                    <bold>
+                                        <xsl:value-of select="."/>
+                                    </bold>
+                                </td>
+                            </xsl:for-each>
+                        </tr>
+                        <xsl:variable name="n" select="2"/>
+                        <xsl:variable name="row_count" select="count(tei:table/tei:row)"/>
+    
+                        <xsl:if test="$n &lt;= $row_count">
+                            <xsl:call-template name="td-repeat">
+                                <xsl:with-param name="total" select="$row_count"/>
+                            </xsl:call-template>
+                        </xsl:if>
+                    </table>
+                </xsl:if>
+                <xsl:if test="@validated='false'">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <xsl:value-of select="tei:table"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </xsl:if>                
 				<table-wrap-foot>
 					<fn>
 						<p>

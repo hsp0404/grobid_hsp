@@ -51,6 +51,7 @@ public class Table extends Figure implements Comparable<Table> {
     private StringBuilder note = null;
     private List<LayoutToken> noteLayoutTokens = null;
     private String labeledNote = null;
+    private boolean isBody = false;
 
 
 	public void setGoodTable(boolean goodTable) {
@@ -67,10 +68,6 @@ public class Table extends Figure implements Comparable<Table> {
 
 	@Override
     public String toTEI(GrobidAnalysisConfig config, Document doc, TEIFormatter formatter, List<MarkerType> markerTypes) {
-		if (StringUtils.isEmpty(header) && StringUtils.isEmpty(caption)) {
-			return null;
-		}
-
 		Element tableElement = XmlBuilderUtils.teiElement("figure");
 		tableElement.addAttribute(new Attribute("type", "table"));
 		if (id != null) {
@@ -78,7 +75,9 @@ public class Table extends Figure implements Comparable<Table> {
 		}
 
         // this is non TEI, to be reviewed
-		//tableElement.addAttribute(new Attribute("validated", String.valueOf(isGoodTable())));
+        if(StringUtils.isEmpty(header) && StringUtils.isEmpty(caption)){
+            tableElement.addAttribute(new Attribute("validated", String.valueOf(false)));
+        }
 
 		if ((config.getGenerateTeiCoordinates() != null) && (config.getGenerateTeiCoordinates().contains("figure"))) {
 			XmlBuilderUtils.addCoords(tableElement, LayoutTokensUtil.getCoordsStringForOneBox(getLayoutTokens()));
@@ -254,6 +253,11 @@ public class Table extends Figure implements Comparable<Table> {
 	 */
 	void processTableContent(Element contentEl, List<LayoutToken> contentTokens) {
 		// Join Layout Tokens into cell lines originally created by PDFAlto
+        if (StringUtils.isEmpty(header) && StringUtils.isEmpty(caption)){
+            contentEl.appendChild(LayoutTokensUtil.toText(contentTokens).replaceAll("\n", ""));
+            return;
+        }
+        
 		List<LinePart> lineParts = Line.extractLineParts(contentTokens);
 
 		// Build lines by comparing borders
@@ -478,5 +482,13 @@ public class Table extends Figure implements Comparable<Table> {
             setTextArea(Collections.singletonList(BoundingBoxCalculator.calculateOneBox(temp, true)));
         }
             
+    }
+
+    public boolean isBody() {
+        return isBody;
+    }
+
+    public void setBody(boolean body) {
+        isBody = body;
     }
 }
