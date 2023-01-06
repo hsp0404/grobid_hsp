@@ -59,15 +59,19 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -339,6 +343,116 @@ public class GrobidRestServiceTest {
             response.readEntity(String.class));
     }
     
+    @Test
+    public void testExtract() throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(GrobidProperties.getMaxConcurrency());
+        File dir = new File("/mnt/c/Users/hsp/Downloads/Articles2");
+        File[] files = dir.listFiles();
+        ArrayList<MetaVO> result = new ArrayList<>();
+        List<Callable<List<MetaVO>>> threads = new ArrayList<>();
+        BufferedWriter bw = new BufferedWriter(new FileWriter(new File("/mnt/c/Users/hsp/Documents/result_0106.csv")));
+        String NEW_LINE = System.lineSeparator();
+        String COMMA = ",";
+        bw.write("file,title,abstract,authors,keywords,submission,doi");
+        bw.write(NEW_LINE);
+        
+        
+        for (File file : files) {
+            Callable<List<MetaVO>> thread = () -> {
+                try {
+                    LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
+                    paramMap.put(file.getName(), new FileInputStream(file));
+                    Object response = restProcessFiles.getMetaData(paramMap, 0, 0).getEntity();
+                    return (List<MetaVO>) response;
+                } catch (Exception e) {
+                    return null;
+                }
+            };
+            threads.add(thread);
+        }
+        List<Future<List<MetaVO>>> futures = executorService.invokeAll(threads);
+        try {
+            for (Future<List<MetaVO>> future : futures) {
+                List<MetaVO> r = future.get();
+                if (r == null) {
+                    MetaVO e = new MetaVO();
+                    e.setLang("none");
+                    result.add(e);
+                } else
+                    result.add(r.get(0));
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println(e);
+        }
+        String title = "";
+        String abs = "";
+        StringBuilder authors = new StringBuilder();
+        authors.append("\"");
+        StringBuilder keywords = new StringBuilder();
+        keywords.append("\"");
+        String submission = "";
+        String doi = "";
+
+        for (int i = 0; i < files.length; i++) {
+            MetaVO metaVO = result.get(i);
+            title = metaVO.getTitle_en();
+            abs = metaVO.getAbstract_en();
+            for(int j=0; j<metaVO.getAuthors().size(); j++){
+                authors.append(metaVO.getAuthors().get(j).getName_en());
+                if (j < metaVO.getAuthors().size() -1) {
+                    authors.append(COMMA+ " ");
+                }
+            }
+            authors.append("\"");
+            for (int j=0; j<metaVO.getKeywords().size(); j++) {
+                keywords.append(metaVO.getKeywords().get(j));
+                if (j < metaVO.getAuthors().size() -1) {
+                    keywords.append(COMMA + " ");
+                }
+            }
+            keywords.append("\"");
+            submission = metaVO.getSubmission();
+            doi = metaVO.getDoi();
+            
+            if (title != null) {
+                title = title.replaceAll("\"", "'");
+            }
+            
+            if (abs != null) {
+                abs = abs.replaceAll("\"", "'");
+            }
+            
+            if (submission != null) {
+                submission = submission.replaceAll("\"", "'");
+            }
+            
+            if (doi != null) {
+                doi = doi.replaceAll("\"", "'");
+            }
+
+            try{
+                bw.write("\""+files[i].getName()+"\""+COMMA+"\""+title+"\""+COMMA+"\""+abs+"\""+COMMA+authors+COMMA+keywords+COMMA+"\""+submission+"\""+COMMA+"\""+doi+"\"");
+                bw.write(NEW_LINE);
+            } catch (Exception e) {
+                throw e;
+            }
+            authors = new StringBuilder();
+            authors.append("\"");
+            keywords = new StringBuilder();
+            keywords.append("\"");
+        }
+        
+        bw.flush();
+        bw.close();
+        
+        
+        System.out.println(result);
+    }
+    
     public List<MetaVO> extractProcess(JSONArray jsonArray, boolean save) throws InterruptedException, ExecutionException {
         ExecutorService executorService = Executors.newFixedThreadPool(GrobidProperties.getMaxConcurrency());
         ArrayList<MetaVO> result = new ArrayList<>();
@@ -351,8 +465,12 @@ public class GrobidRestServiceTest {
                     String doc_id = (String) jsonObj.get("doc_id");
                     LinkedHashMap<String, InputStream> paramMap = new LinkedHashMap<>();
                     List<MetaVO> res_ = Collections.synchronizedList(new ArrayList<>());
-                    File pdfFile = new File("/Users/hs/Desktop/pdfs/" + doc_id + ".pdf");
-                    try (BufferedInputStream in = new BufferedInputStream(new URL("https://www.koreascience.or.kr/article/" + doc_id + ".pdf").openStream())) {
+                    File pdfFile = new File("/mnt/c/Users/hsp/Desktop/pdfs/ko/" + doc_id + ".pdf");
+                    URL url = null;
+                    BufferedInputStream in = null;
+                    try {
+                        url = new URL("https://www.koreascience.or.kr/article/" + doc_id + ".pdf");
+                        in = new BufferedInputStream(url.openStream());
                         if(save){
                             System.out.println("non existing.. save..");
                             FileUtils.copyInputStreamToFile(in, pdfFile);
@@ -365,6 +483,7 @@ public class GrobidRestServiceTest {
                         if (response instanceof List) {
                             return (List<MetaVO>) response;
                         }
+                        in.close();
                     } catch (IOException e){
                         System.out.println("파일이 없습니다.");
                     }
@@ -410,9 +529,11 @@ public class GrobidRestServiceTest {
         try {
             for (Future<List<MetaVO>> future : futures) {
                 List<MetaVO> r = future.get();
-                if (r == null)
-                    result.add(new MetaVO());
-                else
+                if (r == null) {
+                    MetaVO e = new MetaVO();
+                    e.setLang("none");
+                    result.add(e);
+                } else
                     result.add(r.get(0));
             }
         } catch (InterruptedException e) {
@@ -438,6 +559,7 @@ public class GrobidRestServiceTest {
 
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(reader);
+        reader.close();
 
         JSONArray jsonArr_ = (JSONArray) obj;
 
@@ -474,7 +596,6 @@ public class GrobidRestServiceTest {
             String authors = (String) j.get("authors");
             String docId = (String) j.get("doc_id");
 
-            File file = new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf");
 
 //            while (koTitle == null || !koTitle.matches(".*[一-龥].*")) {
 //            while (enTitle == null || !enTitle.matches(".*\\$.*\\$.*")) {
@@ -496,7 +617,6 @@ public class GrobidRestServiceTest {
                 enAbstract = (String) titleObj.get("en");
                 koAbstract = (String) titleObj.get("ko");
 
-                file = new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf");
 
 //                keywordObj = (JSONObject) j.get("keyword");
 //                enKeyword = (String) titleObj.get("en");
@@ -613,7 +733,6 @@ public class GrobidRestServiceTest {
                 enAbstract = (String) titleObj.get("en");
                 koAbstract = (String) titleObj.get("ko");
 
-                file = new File("/Users/hs/Desktop/pdfs/" + docId + ".pdf");
 
 //                keywordObj = (JSONObject) j.get("keyword");
 //                enKeyword = (String) titleObj.get("en");
@@ -643,7 +762,10 @@ public class GrobidRestServiceTest {
         for (int i=0; i<jsonArr.size(); i++) {
             JSONObject jsonObj = (JSONObject) jsonArr.get(i);
             doc_id = (String) jsonObj.get("doc_id");
-           MetaVO res = metaVOS.get(i);
+            MetaVO res = metaVOS.get(i);
+            if (res.getLang().equals("none")) {
+                continue;
+            }
             if (res.isConsolidated()) {
                 consolidated++;
             }
@@ -789,7 +911,7 @@ public class GrobidRestServiceTest {
         
         for (int i = 0; i < iter; i++) {
             System.out.println((i+1) + " / " + iter + "번째..");
-            Map<String, Pair<Integer, Integer>> result = testFile(size, false,false);
+            Map<String, Pair<Integer, Integer>> result = testFile(size, true,false);
             if (result.get("title") != null) {
                 titleMatch += result.get("title").getA();
                 titleTotal += result.get("title").getB();
@@ -836,11 +958,11 @@ public class GrobidRestServiceTest {
 //        System.out.println("author      : " + authorAvg / iter);
 //        System.out.println("consolidated: " + consolidatedAvg);
 
-        File file = new File("/Users/hs/Desktop/pdfs/");
-        File[] files = file.listFiles();
-        for (File f : files) {
-            f.delete();
-        }
+//        File file = new File("/Users/hs/Desktop/pdfs/");
+//        File[] files = file.listFiles();
+//        for (File f : files) {
+//            f.delete();
+//        }
         
     }
     
