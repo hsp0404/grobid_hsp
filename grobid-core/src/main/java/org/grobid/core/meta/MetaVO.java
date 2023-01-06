@@ -56,6 +56,8 @@ public class MetaVO {
     private Pattern englishNamePattern;
 
     private String key;
+    
+    private String lang;
 
     private static List<Pair<String, String>> lastNamePairs;
     private List<LayoutToken> authorTokens = new ArrayList<>();
@@ -108,6 +110,14 @@ public class MetaVO {
             }
 
         }
+    }
+
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
     }
 
     public List<String> getKeywords() {

@@ -716,7 +716,13 @@ public class ReferenceExtractor implements Closeable {
 
             if (articles != null) {
                 int k = 0;
-                List<BiblioItem> bibResults = parsers.getCitationParser().processingStringMultiple(referencesNPL, consolidate);
+                List<BiblioItem> bibResults = null;
+                String langu = languageUtilities.runLanguageId(bibResults.toString()).getLang();
+                if (langu.equals("ko")) {
+                    bibResults = parsers.getKoCitationParser().processingStringMultiple(referencesNPL, consolidate);
+                }else{
+                    bibResults = parsers.getCitationParser().processingStringMultiple(referencesNPL, consolidate);
+                }
                 for (String ref : referencesNPL) {
                     BiblioItem result = bibResults.get(k);
                     if (result == null) {
@@ -1239,7 +1245,13 @@ public class ReferenceExtractor implements Closeable {
 
             if (articles != null) {
                 int k = 0;
-                List<BiblioItem> bibResults = parsers.getCitationParser().processingStringMultiple(referencesNPL, consolidate);
+                List<BiblioItem> bibResults = null;
+                String langu = languageUtilities.runLanguageId(bibResults.toString()).getLang();
+                if (langu.equals("ko")) {
+                    bibResults = parsers.getKoCitationParser().processingStringMultiple(referencesNPL, consolidate);
+                } else {
+                    bibResults = parsers.getCitationParser().processingStringMultiple(referencesNPL, consolidate);   
+                }
                 for (String ref : referencesNPL) {
                     BiblioItem result = bibResults.get(k);
                     if (result == null) {
@@ -1585,7 +1597,14 @@ public class ReferenceExtractor implements Closeable {
                     for (String inpu : inputs) {
                         ArrayList<String> inpus = new ArrayList<String>();
                         inpus.add(inpu);
-                        StringBuilder bufferReference = parsers.getCitationParser().trainingExtraction(inpus);
+                        String langu = languageUtilities.runLanguageId(inpus.toString()).getLang();
+                        StringBuilder bufferReference = null;
+
+                        if (langu.equals("ko")) {
+                            bufferReference = parsers.getKoCitationParser().trainingExtraction(inpus);   
+                        } else {
+                            bufferReference = parsers.getCitationParser().trainingExtraction(inpus);
+                        }
                         if (bufferReference != null) {
                             allBufferReference.append(bufferReference.toString() + "\n");
                         }

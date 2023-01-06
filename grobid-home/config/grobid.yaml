@@ -71,7 +71,7 @@ grobid:
     # delft installation path if Deep Learning architectures are used to implement one of the sequence labeling model, 
     # embeddings are usually compiled as lmdb under delft/data (this paramter is ignored if only featured-engineered CRF are used)
     install: "../delft"
-    pythonVirtualEnv: "/Users/hs/miniforge3/envs/py38"
+    pythonVirtualEnv: "../delft/enmv"
 
   wapiti:
     # Wapiti global parameters
@@ -117,6 +117,22 @@ grobid:
           # parameters used at runtime/prediction
           max_sequence_length: 3000
           batch_size: 1
+          
+    - name: "ko_header"
+      engine: "wapiti"
+      #engine: "delft"
+      wapiti:
+        # wapiti training parameters, they will be used at training time only  
+        epsilon: 0.000001
+        window: 30
+        nbMaxIterations: 1500
+      delft:
+        # deep learning parameters
+        architecture: "BidLSTM_CRF_FEATURES"
+        runtime:
+          # parameters used at runtime/prediction
+          max_sequence_length: 3000
+          batch_size: 1
 
     - name: "reference-segmenter"
       engine: "wapiti"
@@ -130,13 +146,27 @@ grobid:
         architecture: "BidLSTM_CRF"
 
     - name: "name-header"
-#      engine: "wapiti"
-      engine: "delft"
+      engine: "wapiti"
+#      engine: "delft"
       delft:
         # deep learning parameters
         architecture: "BidLSTM_CRF_FEATURES"
+        
+    - name: "ko_name-header"
+      engine: "wapiti"
+      #      engine: "delft"
+      delft:
+        # deep learning parameters
+        architecture: "BidLSTM_CRF_FEATURES"  
 
     - name: "name-citation"
+      engine: "wapiti"
+      #engine: "delft"
+      delft:
+        # deep learning parameters
+        architecture: "BidLSTM_CRF_FEATURES"
+        
+    - name: "ko_name-citation"
       engine: "wapiti"
       #engine: "delft"
       delft:
@@ -160,6 +190,17 @@ grobid:
       delft:
         # deep learning parameters
         architecture: "BidLSTM_CRF"
+        
+    - name: "ko_figure"
+      engine: "wapiti"
+      #engine: "delft"
+      wapiti:
+        # wapiti training parameters, they will be used at training time only
+        epsilon: 0.00001
+        window: 20
+      delft:
+        # deep learning parameters
+        architecture: "BidLSTM_CRF"
 
     - name: "table"
       engine: "wapiti"
@@ -169,6 +210,17 @@ grobid:
         epsilon: 0.000001
         window: 50
       delft:  
+        # deep learning parameters
+        architecture: "BidLSTM_CRF"
+        
+    - name: "ko_table"
+      engine: "wapiti"
+      #engine: "delft"
+      wapiti:
+        # wapiti training parameters, they will be used at training time only
+        epsilon: 0.000001
+        window: 50
+      delft:
         # deep learning parameters
         architecture: "BidLSTM_CRF"
 
@@ -200,6 +252,29 @@ grobid:
         training:
           # parameters used for training
           max_sequence_length: 3000  
+          batch_size: 30
+          
+    - name: "ko_citation"
+      engine: "wapiti"
+      #engine: "delft"
+      wapiti:
+        # wapiti training parameters, they will be used at training time only
+        epsilon: 0.00001
+        window: 50
+        nbMaxIterations: 3000
+      delft:
+        # deep learning parameters
+        architecture: "BidLSTM_CRF_FEATURES"
+        #architecture: "scibert"
+        useELMo: false
+        embeddings_name: "glove-840B"
+        runtime:
+          # parameters used at runtime/prediction
+          max_sequence_length: 3000
+          batch_size: 20
+        training:
+          # parameters used for training
+          max_sequence_length: 3000
           batch_size: 30
 
     - name: "patent-citation"

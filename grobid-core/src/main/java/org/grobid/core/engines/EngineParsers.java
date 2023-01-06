@@ -14,15 +14,19 @@ public class EngineParsers implements Closeable {
     private AuthorParser authorParser = null;
     private AffiliationAddressParser affiliationAddressParser = null;
     private HeaderParser headerParser = null;
+    private KoHeaderParser koHeaderParser = null;
     private DateParser dateParser = null;
     private CitationParser citationParser = null;
+    private KoCitationParser koCitationParser = null;
     private FullTextParser fullTextParser = null;
     private ReferenceExtractor referenceExtractor = null;
     private ChemicalParser chemicalParser = null;
     private Segmentation segmentationParser = null;
     private ReferenceSegmenterParser referenceSegmenterParser = null;
     private FigureParser figureParser = null;
+    private KoFigureParser koFigureParser = null;
     private TableParser tableParser = null;
+    private KoTableParser koTableParser = null;
     private MonographParser monographParser = null;
 
     public AffiliationAddressParser getAffiliationAddressParser() {
@@ -58,6 +62,17 @@ public class EngineParsers implements Closeable {
         return headerParser;
     }
 
+    public KoHeaderParser getKoHeaderParser() {
+        if (koHeaderParser == null) {
+            synchronized (this) {
+                if (koHeaderParser == null) {
+                    koHeaderParser = new KoHeaderParser(this);
+                }
+            }
+        }
+        return koHeaderParser;
+    }
+
     public DateParser getDateParser() {
         if (dateParser == null) {
             synchronized (this) {
@@ -79,6 +94,18 @@ public class EngineParsers implements Closeable {
         }
 
         return citationParser;
+    }
+
+    public KoCitationParser getKoCitationParser() {
+        if (koCitationParser == null) {
+            synchronized (this) {
+                if (koCitationParser == null) {
+                    koCitationParser = new KoCitationParser(this);
+                }
+            }
+        }
+
+        return koCitationParser;
     }
 
     public FullTextParser getFullTextParser() {
@@ -148,6 +175,17 @@ public class EngineParsers implements Closeable {
         return figureParser;
     }
 
+    public KoFigureParser getKoFigureParser() {
+        if (koFigureParser == null) {
+            synchronized (this) {
+                if (koFigureParser == null) {
+                    koFigureParser = new KoFigureParser();
+                }
+            }
+        }
+        return koFigureParser;
+    }
+
     public TableParser getTableParser() {
         if (tableParser == null) {
             synchronized (this) {
@@ -157,6 +195,17 @@ public class EngineParsers implements Closeable {
             }
         }
         return tableParser;
+    }
+
+    public KoTableParser getKoTableParser() {
+        if (koTableParser == null) {
+            synchronized (this) {
+                if (koTableParser == null) {
+                    koTableParser = new KoTableParser();
+                }
+            }
+        }
+        return koTableParser;
     }
 
     public MonographParser getMonographParser() {
@@ -177,14 +226,18 @@ public class EngineParsers implements Closeable {
         affiliationAddressParser = getAffiliationAddressParser();
         authorParser = getAuthorParser();
         headerParser = getHeaderParser();
+        koHeaderParser = getKoHeaderParser();
         dateParser = getDateParser();
         citationParser = getCitationParser();
+        koCitationParser = getKoCitationParser();
         fullTextParser = getFullTextParser();
         //referenceExtractor = getReferenceExtractor();
         segmentationParser = getSegmentationParser();
         referenceSegmenterParser = getReferenceSegmenterParser();
         figureParser = getFigureParser();
+        koFigureParser = getKoFigureParser();
         tableParser = getTableParser();
+        koTableParser = getKoTableParser();
         //MonographParser monographParser = getMonographParser();
     }
 

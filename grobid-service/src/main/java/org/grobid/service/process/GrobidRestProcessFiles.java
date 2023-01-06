@@ -435,6 +435,9 @@ public class GrobidRestProcessFiles {
                 if (result.getCopyright() != null) {
                     metaVO.setCopyright(result.getCopyright());
                 }
+                if (result.getLanguage() != null) {
+                    metaVO.setLang(result.getLanguage());
+                }
                 if(includeFiguresTables == 1){
                     if (doc.getFigures() != null){
                         metaVO.setFigures(doc.getFigures());

@@ -137,7 +137,11 @@ public class FullTextParser extends AbstractParser {
             Pair<String, LayoutTokenization> featSeg = null;
 
             // using the segmentation model to identify the header zones
-            parsers.getHeaderParser().processingHeaderSection(config, doc, resHeader, false);
+            if (doc.getLanguage().equals("ko")) {
+                parsers.getKoHeaderParser().processingHeaderSection(config, doc, resHeader, false);
+            } else {
+                parsers.getHeaderParser().processingHeaderSection(config, doc, resHeader, false);
+            }
 
             // structure the abstract using the fulltext model
             if (isNotBlank(resHeader.getAbstract())) {
@@ -159,8 +163,17 @@ public class FullTextParser extends AbstractParser {
             // citation processing
             // consolidation, if selected, is not done individually for each citation but
             // in a second stage for all citations which is much faster
-            List<BibDataSet> resCitations = parsers.getCitationParser().
-                processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+            List<BibDataSet> resCitations = null;
+            
+            if (doc.getLanguage().equals("ko")) {
+                resCitations = parsers.getKoCitationParser().
+                    processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+            } else{
+                resCitations = parsers.getCitationParser().
+                    processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+            }
+            
+            
 
             // consolidate the set
             if (config.getConsolidateCitations() != 0 && resCitations != null) {
@@ -283,6 +296,10 @@ public class FullTextParser extends AbstractParser {
                 }
             }*/
 
+            if (doc.getLanguage().equals("ko")) {
+                parsers.getKoHeaderParser().processingHeaderSection(config, doc, resHeader, false);
+            }
+
             // structure the abstract using the fulltext model
             if (isNotBlank(resHeader.getAbstract())) {
                 //List<LayoutToken> abstractTokens = resHeader.getLayoutTokens(TaggingLabels.HEADER_ABSTRACT);
@@ -305,8 +322,16 @@ public class FullTextParser extends AbstractParser {
             // citation processing
             // consolidation, if selected, is not done individually for each citation but 
             // in a second stage for all citations which is much faster
-            List<BibDataSet> resCitations = parsers.getCitationParser().
-                processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+
+            List<BibDataSet> resCitations = null;
+
+            if (doc.getLanguage().equals("ko")) {
+                resCitations = parsers.getKoCitationParser().
+                    processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+            } else{
+                resCitations = parsers.getCitationParser().
+                    processingReferenceSection(doc, parsers.getReferenceSegmenterParser(), 0);
+            }
 
             // consolidate the set
             if (config.getConsolidateCitations() != 0 && resCitations != null) {
@@ -1189,8 +1214,16 @@ public class FullTextParser extends AbstractParser {
             }
             ReferenceSegmenter referenceSegmenter = parsers.getReferenceSegmenterParser();
             List<LabeledReferenceResult> references = referenceSegmenter.extract(doc);
-            List<BibDataSet> resCitations = parsers.getCitationParser().
-                processingReferenceSection(doc, referenceSegmenter, 0);
+            
+            List<BibDataSet> resCitations = null;
+            if (doc.getLanguage().equals("ko")) {
+                resCitations = parsers.getKoCitationParser().
+                    processingReferenceSection(doc, referenceSegmenter, 0);
+            } else {
+                resCitations = parsers.getCitationParser().
+                    processingReferenceSection(doc, referenceSegmenter, 0);    
+            }
+            
             doc.setBibDataSets(resCitations);
 
             if (references == null) {
@@ -1202,7 +1235,13 @@ public class FullTextParser extends AbstractParser {
                 for (LabeledReferenceResult ref : references) {
                     allInput.add(ref.getReferenceText());
                 }
-                StringBuilder bufferReference = parsers.getCitationParser().trainingExtraction(allInput);
+                StringBuilder bufferReference = null;
+                
+                if (doc.getLanguage().equals("ko")) {
+                    bufferReference = parsers.getKoCitationParser().trainingExtraction(allInput);
+                } else {
+                    bufferReference = parsers.getCitationParser().trainingExtraction(allInput);
+                }
                 if (bufferReference != null) {
                     bufferReference.append("\n");
 
@@ -1240,7 +1279,12 @@ public class FullTextParser extends AbstractParser {
 
                     for (LabeledReferenceResult ref : references) {
                         if ( (ref.getReferenceText() != null) && (ref.getReferenceText().trim().length() > 0) ) {
-                            BiblioItem bib = parsers.getCitationParser().processingString(ref.getReferenceText(), 0);
+                            BiblioItem bib = null;
+                            if (doc.getLanguage().equals("ko")) {
+                                bib = parsers.getKoCitationParser().processingString(ref.getReferenceText(), 0);
+                            } else {
+                                bib = parsers.getCitationParser().processingString(ref.getReferenceText(), 0);
+                            }
                             String authorSequence = bib.getAuthors();
                             if ((authorSequence != null) && (authorSequence.trim().length() > 0) ) {
                                 /*List<String> inputs = new ArrayList<String>();
@@ -1350,7 +1394,13 @@ public class FullTextParser extends AbstractParser {
                         headerTokenizations.add(tokenizationsFull.get(i));
                     }
                 }
-                Pair<String, List<LayoutToken>> featuredHeader = parsers.getHeaderParser().getSectionHeaderFeatured(doc, documentHeaderParts, true);
+
+                Pair<String, List<LayoutToken>> featuredHeader = null;
+                if (doc.getLanguage().equals("ko")) {
+                    featuredHeader = parsers.getKoHeaderParser().getSectionHeaderFeatured(doc, documentHeaderParts, true);
+                } else{
+                    featuredHeader = parsers.getHeaderParser().getSectionHeaderFeatured(doc, documentHeaderParts, true);
+                }
                 String header = featuredHeader.getLeft();
 
                 if ((header != null) && (header.trim().length() > 0)) {
@@ -1360,10 +1410,20 @@ public class FullTextParser extends AbstractParser {
                     writer.write(header + "\n");
                     writer.close();
 
-                    String rese = parsers.getHeaderParser().label(header);
+                    String rese = null;
+                    if (doc.getLanguage().equals("ko")) {
+                        rese = parsers.getKoHeaderParser().label(header);
+                    }else{
+                        rese = parsers.getHeaderParser().label(header);
+                    }
 
                     // buffer for the header block
-                    StringBuilder bufferHeader = parsers.getHeaderParser().trainingExtraction(rese, headerTokenizations);
+                    StringBuilder bufferHeader = null;
+                    if (doc.getLanguage().equals("ko")) {
+                        bufferHeader = parsers.getKoHeaderParser().trainingExtraction(rese, headerTokenizations);
+                    }else{
+                        bufferHeader = parsers.getHeaderParser().trainingExtraction(rese, headerTokenizations);
+                    }
                     Language lang = LanguageUtilities.getInstance().runLanguageId(bufferHeader.toString());
                     if (lang != null) {
                         doc.setLanguage(lang.getLang());
@@ -1452,7 +1512,11 @@ public class FullTextParser extends AbstractParser {
                     if (input.length() > 1) {
                         List<String> inputs = new ArrayList<String>();
                         inputs.add(input.trim());
-                        bufferReference = parsers.getCitationParser().trainingExtraction(inputs);
+                        if (doc.getLanguage().equals("ko")) {
+                            bufferReference = parsers.getKoCitationParser().trainingExtraction(inputs);
+                        } else {
+                            bufferReference = parsers.getCitationParser().trainingExtraction(inputs);
+                        }
                     }
 
                     // write the training TEI file for header which reflects the extract layout of the text as
@@ -2007,10 +2071,18 @@ public class FullTextParser extends AbstractParser {
         for (TaggingTokenCluster cluster : Iterables.filter(clusteror.cluster(),
 				new TaggingTokenClusteror.LabelTypePredicate(TaggingLabels.FIGURE))) {
             List<LayoutToken> tokenizationFigure = cluster.concatTokens();
-            Figure result = parsers.getFigureParser().processing(
+            Figure result = null;
+            if (doc.getLanguage().equals("ko")) {
+                result = parsers.getKoFigureParser().processing(
                     tokenizationFigure,
                     cluster.getFeatureBlock()
-            );
+                );
+            } else {
+                result = parsers.getFigureParser().processing(
+                        tokenizationFigure,
+                        cluster.getFeatureBlock()
+                );
+            }
 			SortedSet<Integer> blockPtrs = new TreeSet<>();
 			for (LayoutToken lt : tokenizationFigure) {
 				if (!LayoutTokensUtil.spaceyToken(lt.t()) && !LayoutTokensUtil.newLineToken(lt.t())) {
@@ -2190,10 +2262,21 @@ public class FullTextParser extends AbstractParser {
 		for (TaggingTokenCluster cluster : Iterables.filter(clusteror.cluster(),
 				new TaggingTokenClusteror.LabelTypePredicate(TaggingLabels.TABLE))) {
 			List<LayoutToken> tokenizationTable = cluster.concatTokens();
-			List<Table> localResults = parsers.getTableParser().processing(
-					tokenizationTable,
-					cluster.getFeatureBlock()
-			);
+
+            List<Table> localResults = null;
+            
+            if (doc.getLanguage().equals("ko")) {
+                localResults = parsers.getKoTableParser().processing(
+                    tokenizationTable,
+                    cluster.getFeatureBlock()
+                );
+            } else {
+                localResults = parsers.getTableParser().processing(
+                    tokenizationTable,
+                    cluster.getFeatureBlock()
+                );
+            }
+            
 
             ArrayList<Table> newLocalResults = new ArrayList<>();
 

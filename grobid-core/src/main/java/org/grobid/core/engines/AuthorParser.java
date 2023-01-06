@@ -16,6 +16,7 @@ import org.grobid.core.layout.PDFAnnotation;
 import org.grobid.core.lexicon.Lexicon;
 import org.grobid.core.tokenization.TaggingTokenCluster;
 import org.grobid.core.tokenization.TaggingTokenClusteror;
+import org.grobid.core.utilities.LanguageUtilities;
 import org.grobid.core.utilities.LayoutTokensUtil;
 import org.grobid.core.utilities.Pair;
 import org.grobid.core.utilities.TextUtilities;
@@ -45,12 +46,18 @@ public class AuthorParser {
 	private static Logger LOGGER = LoggerFactory.getLogger(AuthorParser.class);
     private final GenericTagger namesHeaderParser;
     private final GenericTagger namesCitationParser;
+    private final GenericTagger koNamesHeaderParser;
+    private final GenericTagger koNamesCitationParser;
+
+    private LanguageUtilities languageUtilities = LanguageUtilities.getInstance();
 
     private static final Pattern ET_AL_REGEX_PATTERN = Pattern.compile("et\\.? al\\.?.*$");
 	
     public AuthorParser() {
         namesHeaderParser = TaggerFactory.getTagger(GrobidModels.NAMES_HEADER);
         namesCitationParser = TaggerFactory.getTagger(GrobidModels.NAMES_CITATION);
+        koNamesHeaderParser = TaggerFactory.getTagger(GrobidModels.KO_NAMES_HEADER);
+        koNamesCitationParser = TaggerFactory.getTagger(GrobidModels.KO_NAMES_CITATION);
     }
 
     /**
@@ -252,7 +259,19 @@ public class AuthorParser {
                 titlePositions, suffixPositions);
             if (StringUtils.isEmpty(sequence))
                 return null;
-            GenericTagger tagger = head ? namesHeaderParser : namesCitationParser;
+
+            GenericTagger tagger = null;
+            Language langu = languageUtilities.runLanguageId(tokens.toString());
+            if (langu != null) {
+                String lang = langu.getLang();
+                if (lang.equals("ko")) {
+                    tagger = head ? koNamesHeaderParser : koNamesCitationParser;
+                } else {
+                    tagger = head ? namesHeaderParser : namesCitationParser;
+                }
+            } else {
+                tagger = head ? namesHeaderParser : namesCitationParser;
+            }
             String res = tagger.label(sequence);
 //System.out.println(res);
             TaggingTokenClusteror clusteror = new TaggingTokenClusteror(head ? GrobidModels.NAMES_HEADER : GrobidModels.NAMES_CITATION, res, tokens);

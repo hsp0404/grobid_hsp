@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
  */
 public class GrobidProperties {
     public static final Logger LOGGER = LoggerFactory.getLogger(GrobidProperties.class);
-
+    
     static final String FOLDER_NAME_MODELS = "models";
     static final String FOLDER_NAME_MODELS_KO = "models_ko";
     static final String FILE_NAME_MODEL = "model";
